@@ -72,6 +72,11 @@ contract CCTPV2ConfidentialEscrowReceiver is ICCTPV2ConfidentialEscrowReceiver, 
             revert EscrowNotFound(escrowId);
         }
 
+        address escrowToken = escrow.paymentTokenOf(escrowId);
+        if (escrowToken != address(confidentialUsdc)) {
+            revert EscrowTokenMismatch(escrowId, address(confidentialUsdc), escrowToken);
+        }
+
         uint256 rate = confidentialUsdc.rate();
         uint256 amountToWrap = usdcReceived - (usdcReceived % rate);
         if (amountToWrap == 0) revert ZeroAmount();

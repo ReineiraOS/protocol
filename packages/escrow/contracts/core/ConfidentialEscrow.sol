@@ -10,11 +10,12 @@ import {EscrowLib} from "@reineira-os/shared/contracts/libraries/EscrowLib.sol";
 import {FeeLib} from "@reineira-os/shared/contracts/libraries/FeeLib.sol";
 import {IEscrow} from "@reineira-os/shared/contracts/interfaces/core/IEscrow.sol";
 import {IConfidentialEscrow} from "../interfaces/core/IConfidentialEscrow.sol";
+import {AllowedTokens} from "../extensions/AllowedTokens.sol";
 import {EscrowCondition} from "../extensions/EscrowCondition.sol";
 import {FHEMeta} from "@reineira-os/shared/contracts/common/FHEMeta.sol";
 import {IConditionResolver} from "@reineira-os/shared/contracts/interfaces/plugins/IConditionResolver.sol";
 
-contract ConfidentialEscrow is IEscrow, IConfidentialEscrow, EscrowCondition, TestnetCoreBase {
+contract ConfidentialEscrow is IEscrow, IConfidentialEscrow, AllowedTokens, EscrowCondition, TestnetCoreBase {
     uint256 public constant MAX_BATCH_SIZE = 20;
 
     IFHERC20 private _paymentToken;
@@ -56,7 +57,26 @@ contract ConfidentialEscrow is IEscrow, IConfidentialEscrow, EscrowCondition, Te
         if (paymentToken_ == address(0)) revert ZeroAddress();
         __TestnetCoreBase_init(owner_);
         _paymentToken = IFHERC20(paymentToken_);
+        _seedAllowedToken(paymentToken_);
         emit CoreInitialized(owner_);
+    }
+
+    function addAllowedToken(address token) external override onlyOwner {
+        if (token == address(0)) revert ZeroAddress();
+        _addAllowedToken(token);
+    }
+
+    function removeAllowedToken(address token) external override onlyOwner {
+        _removeAllowedToken(token);
+    }
+
+    function isAllowedToken(address token) external view override returns (bool) {
+        return _isAllowedToken(token);
+    }
+
+    function paymentTokenOf(uint256 escrowId) external view override returns (address) {
+        EscrowLib.validateExists(escrowId < _nextId, escrowId);
+        return _paymentTokenOfRaw(escrowId);
     }
 
     function create(
@@ -71,6 +91,7 @@ contract ConfidentialEscrow is IEscrow, IConfidentialEscrow, EscrowCondition, Te
         eaddress callerEncrypted = FHE.asEaddress(sender);
 
         escrowId = _nextId++;
+        _resolvePaymentToken(escrowId, address(0));
 
         euint64 zeroPaid = FHE.asEuint64(0);
         ebool notRedeemed = FHE.asEbool(false);
@@ -118,15 +139,16 @@ contract ConfidentialEscrow is IEscrow, IConfidentialEscrow, EscrowCondition, Te
         address sender = _msgSender();
         Escrow storage escrow = _escrows[escrowId];
 
+        IFHERC20 token = IFHERC20(_paymentTokenOfRaw(escrowId));
         euint64 paymentAmount = FHEMeta.asEuint64(encryptedPayment, sender);
 
-        euint64 balanceBefore = _paymentToken.confidentialBalanceOf(address(this));
+        euint64 balanceBefore = token.confidentialBalanceOf(address(this));
 
-        FHE.allowTransient(paymentAmount, address(_paymentToken));
+        FHE.allowTransient(paymentAmount, address(token));
 
-        _paymentToken.confidentialTransferFrom(sender, address(this), paymentAmount);
+        token.confidentialTransferFrom(sender, address(this), paymentAmount);
 
-        euint64 balanceAfter = _paymentToken.confidentialBalanceOf(address(this));
+        euint64 balanceAfter = token.confidentialBalanceOf(address(this));
         euint64 actualPayment = FHE.sub(balanceAfter, balanceBefore);
 
         euint64 newPaidAmount = FHE.add(escrow.paidAmount, actualPayment);
@@ -143,12 +165,13 @@ contract ConfidentialEscrow is IEscrow, IConfidentialEscrow, EscrowCondition, Te
         address sender = _msgSender();
         Escrow storage escrow = _escrows[escrowId];
 
-        euint64 balanceBefore = _paymentToken.confidentialBalanceOf(address(this));
+        IFHERC20 token = IFHERC20(_paymentTokenOfRaw(escrowId));
+        euint64 balanceBefore = token.confidentialBalanceOf(address(this));
 
-        FHE.allowTransient(amount, address(_paymentToken));
-        _paymentToken.confidentialTransferFrom(sender, address(this), amount);
+        FHE.allowTransient(amount, address(token));
+        token.confidentialTransferFrom(sender, address(this), amount);
 
-        euint64 balanceAfter = _paymentToken.confidentialBalanceOf(address(this));
+        euint64 balanceAfter = token.confidentialBalanceOf(address(this));
         euint64 actualPayment = FHE.sub(balanceAfter, balanceBefore);
 
         euint64 newPaidAmount = FHE.add(escrow.paidAmount, actualPayment);
@@ -164,25 +187,10 @@ contract ConfidentialEscrow is IEscrow, IConfidentialEscrow, EscrowCondition, Te
         _checkCondition(escrowId);
 
         address sender = _msgSender();
-        Escrow storage escrow = _escrows[escrowId];
+        (IFHERC20 token, euint64 net) = _settleOne(escrowId, FHE.asEaddress(sender));
 
-        eaddress callerEncrypted = FHE.asEaddress(sender);
-
-        ebool canRedeem = FHE.and(
-            FHE.and(FHE.eq(escrow.owner, callerEncrypted), FHE.gte(escrow.paidAmount, escrow.amount)),
-            FHE.not(escrow.isRedeemed)
-        );
-
-        euint64 zero = FHE.asEuint64(0);
-        euint64 redemptionAmount = FHE.select(canRedeem, escrow.paidAmount, zero);
-
-        escrow.isRedeemed = FHE.or(escrow.isRedeemed, canRedeem);
-        FHE.allowThis(escrow.isRedeemed);
-
-        euint64 net = _distributeFees(escrowId, redemptionAmount, canRedeem);
-
-        FHE.allowTransient(net, address(_paymentToken));
-        _paymentToken.confidentialTransfer(sender, net);
+        FHE.allowTransient(net, address(token));
+        token.confidentialTransfer(sender, net);
 
         emit EscrowRedeemed(escrowId);
     }
@@ -193,11 +201,11 @@ contract ConfidentialEscrow is IEscrow, IConfidentialEscrow, EscrowCondition, Te
         EscrowLib.validateBatchSize(length, MAX_BATCH_SIZE);
 
         address sender = _msgSender();
-
-        euint64 totalNet = FHE.asEuint64(0);
-        FHE.allowThis(totalNet);
-
         eaddress callerEncrypted = FHE.asEaddress(sender);
+
+        address[] memory tokens = new address[](length);
+        euint64[] memory nets = new euint64[](length);
+        uint256 uniq = 0;
 
         for (uint256 i = 0; i < length; i++) {
             uint256 escrowId = escrowIds[i];
@@ -205,26 +213,15 @@ contract ConfidentialEscrow is IEscrow, IConfidentialEscrow, EscrowCondition, Te
             if (escrowId >= _nextId) continue;
             if (!_isConditionMet(escrowId)) continue;
 
-            Escrow storage escrow = _escrows[escrowId];
-
-            ebool canRedeem = FHE.and(
-                FHE.and(FHE.eq(escrow.owner, callerEncrypted), FHE.gte(escrow.paidAmount, escrow.amount)),
-                FHE.not(escrow.isRedeemed)
-            );
-
-            euint64 zero = FHE.asEuint64(0);
-            euint64 redemptionAmount = FHE.select(canRedeem, escrow.paidAmount, zero);
-
-            escrow.isRedeemed = FHE.or(escrow.isRedeemed, canRedeem);
-            FHE.allowThis(escrow.isRedeemed);
-
-            euint64 net = _distributeFees(escrowId, redemptionAmount, canRedeem);
-            totalNet = FHE.add(totalNet, net);
+            (IFHERC20 token, euint64 net) = _settleOne(escrowId, callerEncrypted);
+            uniq = _accumulate(tokens, nets, uniq, address(token), net);
         }
 
-        FHE.allowThis(totalNet);
-        FHE.allowTransient(totalNet, address(_paymentToken));
-        _paymentToken.confidentialTransfer(sender, totalNet);
+        for (uint256 j = 0; j < uniq; j++) {
+            FHE.allowThis(nets[j]);
+            FHE.allowTransient(nets[j], tokens[j]);
+            IFHERC20(tokens[j]).confidentialTransfer(sender, nets[j]);
+        }
 
         emit EscrowBatchRedeemed(escrowIds);
     }
@@ -330,9 +327,9 @@ contract ConfidentialEscrow is IEscrow, IConfidentialEscrow, EscrowCondition, Te
         address resolver,
         bytes calldata resolverData
     ) external override nonReentrant returns (uint256 escrowId) {
-        (InEaddress memory encryptedOwner, InEuint64 memory encryptedAmount) = abi.decode(
+        (InEaddress memory encryptedOwner, InEuint64 memory encryptedAmount, address token_) = abi.decode(
             initData,
-            (InEaddress, InEuint64)
+            (InEaddress, InEuint64, address)
         );
 
         address sender = _msgSender();
@@ -341,6 +338,7 @@ contract ConfidentialEscrow is IEscrow, IConfidentialEscrow, EscrowCondition, Te
         eaddress callerEncrypted = FHE.asEaddress(sender);
 
         escrowId = _nextId++;
+        _resolvePaymentToken(escrowId, token_);
 
         euint64 zeroPaid = FHE.asEuint64(0);
         ebool notRedeemed = FHE.asEbool(false);
@@ -390,15 +388,16 @@ contract ConfidentialEscrow is IEscrow, IConfidentialEscrow, EscrowCondition, Te
         address sender = _msgSender();
         Escrow storage escrow = _escrows[escrowId];
 
+        IFHERC20 token = IFHERC20(_paymentTokenOfRaw(escrowId));
         euint64 paymentAmount = FHEMeta.asEuint64(encryptedPayment, sender);
 
-        euint64 balanceBefore = _paymentToken.confidentialBalanceOf(address(this));
+        euint64 balanceBefore = token.confidentialBalanceOf(address(this));
 
-        FHE.allowTransient(paymentAmount, address(_paymentToken));
+        FHE.allowTransient(paymentAmount, address(token));
 
-        _paymentToken.confidentialTransferFrom(sender, address(this), paymentAmount);
+        token.confidentialTransferFrom(sender, address(this), paymentAmount);
 
-        euint64 balanceAfter = _paymentToken.confidentialBalanceOf(address(this));
+        euint64 balanceAfter = token.confidentialBalanceOf(address(this));
         euint64 actualPayment = FHE.sub(balanceAfter, balanceBefore);
 
         euint64 newPaidAmount = FHE.add(escrow.paidAmount, actualPayment);
@@ -423,26 +422,10 @@ contract ConfidentialEscrow is IEscrow, IConfidentialEscrow, EscrowCondition, Te
         EscrowLib.validateExists(escrowId < _nextId, escrowId);
         _checkCondition(escrowId);
 
-        address sender = _msgSender();
-        Escrow storage escrow = _escrows[escrowId];
+        (IFHERC20 token, euint64 net) = _settleOne(escrowId, FHE.asEaddress(_msgSender()));
 
-        eaddress callerEncrypted = FHE.asEaddress(sender);
-
-        ebool canRedeem = FHE.and(
-            FHE.and(FHE.eq(escrow.owner, callerEncrypted), FHE.gte(escrow.paidAmount, escrow.amount)),
-            FHE.not(escrow.isRedeemed)
-        );
-
-        euint64 zero = FHE.asEuint64(0);
-        euint64 redemptionAmount = FHE.select(canRedeem, escrow.paidAmount, zero);
-
-        escrow.isRedeemed = FHE.or(escrow.isRedeemed, canRedeem);
-        FHE.allowThis(escrow.isRedeemed);
-
-        euint64 net = _distributeFees(escrowId, redemptionAmount, canRedeem);
-
-        FHE.allowTransient(net, address(_paymentToken));
-        _paymentToken.confidentialTransfer(recipient, net);
+        FHE.allowTransient(net, address(token));
+        token.confidentialTransfer(recipient, net);
 
         emit EscrowRedeemed(escrowId);
     }
@@ -490,7 +473,49 @@ contract ConfidentialEscrow is IEscrow, IConfidentialEscrow, EscrowCondition, Te
         emit FeeStamped(escrowId, kind, 0, recipient);
     }
 
-    function _distributeFees(uint256 escrowId, euint64 paidAmount, ebool canRedeem) private returns (euint64 net) {
+    function _settleOne(uint256 escrowId, eaddress callerEncrypted) private returns (IFHERC20 token, euint64 net) {
+        Escrow storage escrow = _escrows[escrowId];
+
+        ebool canRedeem = FHE.and(
+            FHE.and(FHE.eq(escrow.owner, callerEncrypted), FHE.gte(escrow.paidAmount, escrow.amount)),
+            FHE.not(escrow.isRedeemed)
+        );
+
+        euint64 redemptionAmount = FHE.select(canRedeem, escrow.paidAmount, FHE.asEuint64(0));
+
+        escrow.isRedeemed = FHE.or(escrow.isRedeemed, canRedeem);
+        FHE.allowThis(escrow.isRedeemed);
+
+        token = IFHERC20(_paymentTokenOfRaw(escrowId));
+        net = _distributeFees(escrowId, redemptionAmount, canRedeem, token);
+    }
+
+    function _accumulate(
+        address[] memory tokens,
+        euint64[] memory nets,
+        uint256 uniq,
+        address token,
+        euint64 net
+    ) private returns (uint256) {
+        for (uint256 j = 0; j < uniq; j++) {
+            if (tokens[j] == token) {
+                nets[j] = FHE.add(nets[j], net);
+                FHE.allowThis(nets[j]);
+                return uniq;
+            }
+        }
+        tokens[uniq] = token;
+        nets[uniq] = net;
+        FHE.allowThis(nets[uniq]);
+        return uniq + 1;
+    }
+
+    function _distributeFees(
+        uint256 escrowId,
+        euint64 paidAmount,
+        ebool canRedeem,
+        IFHERC20 token
+    ) private returns (euint64 net) {
         net = paidAmount;
         euint64 maxBpsEnc = FHE.asEuint64(uint64(FeeLib.MAX_TOTAL_BPS));
         for (uint8 k = 0; k < FeeLib.MAX_FEE_KIND; k++) {
@@ -503,8 +528,8 @@ contract ConfidentialEscrow is IEscrow, IConfidentialEscrow, EscrowCondition, Te
             euint64 cappedFee = FHE.select(FHE.lte(conditionalFee, net), conditionalFee, net);
             net = FHE.sub(net, cappedFee);
 
-            FHE.allowTransient(cappedFee, address(_paymentToken));
-            _paymentToken.confidentialTransfer(f.recipient, cappedFee);
+            FHE.allowTransient(cappedFee, address(token));
+            token.confidentialTransfer(f.recipient, cappedFee);
 
             emit FeeDistributed(escrowId, k, 0, f.recipient);
         }
@@ -524,5 +549,15 @@ contract ConfidentialEscrow is IEscrow, IConfidentialEscrow, EscrowCondition, Te
             emit FeeDistributed(escrowId, uint8(FeeLib.FeeKind.Underwriter), 0, f.recipient);
         }
         FHE.allowThis(net);
+    }
+
+    function _resolvePaymentToken(uint256 escrowId, address token) private returns (IFHERC20 resolved) {
+        if (token == address(0)) {
+            resolved = _paymentToken;
+        } else {
+            _requireAllowedToken(token);
+            resolved = IFHERC20(token);
+        }
+        _setPaymentTokenOf(escrowId, address(resolved));
     }
 }

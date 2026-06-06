@@ -9,6 +9,7 @@ library EscrowLib {
     error NotCoverageManager();
     error InvalidFeeKind(uint8 kind);
     error FeeBudgetExceeded(uint16 currentSumBps, uint16 requestedBps, uint16 maxBps);
+    error TokenNotAllowed(address token);
 
     function validateExists(bool exists_, uint256 escrowId) internal pure {
         if (!exists_) revert EscrowDoesNotExist(escrowId);
