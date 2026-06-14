@@ -1,0 +1,267 @@
+openapi: 3.0.3
+info:
+  title: Reineira Operator Service API
+  description: |
+    REST API for the Reineira Operator Service. This service processes CCTP cross-chain
+    tasks by subscribing to the Coordinator, fetching attestations from Circle's
+    Iris API, and executing tasks on the destination chain.
+  version: 0.1.0
+  contact:
+    name: Reineira Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3002
+    description: Local development server
+
+tags:
+  - name: Status
+    description: Operator service status and job monitoring
+
+paths:
+  /status:
+    get:
+      tags:
+        - Status
+      summary: Get operator service status
+      description: Returns the current status of the operator service including connection state and operator address.
+      operationId: getStatus
+      responses:
+        '200':
+          description: Operator status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperatorStatus'
+              example:
+                isRunning: true
+                isConnected: true
+                operatorAddress: '0xa2293acEC08A6fb0A622b976ed2cF4aF1edEA292'
+
+  /status/jobs:
+    get:
+      tags:
+        - Status
+      summary: Get job status summary
+      description: Returns aggregated counts of relay jobs by their current status.
+      operationId: getJobStatus
+      responses:
+        '200':
+          description: Job status summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelayJobStatusSummary'
+              example:
+                totalJobs: 15
+                pending: 2
+                fetchingAttestation: 1
+                claiming: 0
+                executing: 1
+                completed: 10
+                failed: 1
+
+  /status/jobs/all:
+    get:
+      tags:
+        - Status
+      summary: Get all relay jobs
+      description: Returns a list of all relay jobs processed by this operator instance.
+      operationId: getJobs
+      responses:
+        '200':
+          description: List of relay jobs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RelayJob'
+              example:
+                - id: '550e8400-e29b-41d4-a716-446655440000'
+                  transactionHash: '0x907e4defd98dd9e202db20fa4242eda19b439856ccd40866be91f2ba5fce375c'
+                  sourceChainId: 6
+                  status: 'completed'
+                  message: '0x000000010000000600000000...'
+                  attestation: '0xb9a58c625c16c625c4a529cf...'
+                  messageHash: '0x1234567890abcdef...'
+                  executionTxHash: '0xabc123...'
+                  operatorFee: '10000'
+                  createdAt: '2024-01-15T10:30:00.000Z'
+                  completedAt: '2024-01-15T10:30:45.000Z'
+
+  /status/jobs/{id}:
+    get:
+      tags:
+        - Status
+      summary: Get a specific relay job
+      description: Returns details of a specific relay job by its ID.
+      operationId: getJob
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID of the relay job
+          schema:
+            type: string
+            format: uuid
+          example: '550e8400-e29b-41d4-a716-446655440000'
+      responses:
+        '200':
+          description: Relay job retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelayJob'
+              example:
+                id: '550e8400-e29b-41d4-a716-446655440000'
+                transactionHash: '0x907e4defd98dd9e202db20fa4242eda19b439856ccd40866be91f2ba5fce375c'
+                sourceChainId: 6
+                status: 'completed'
+                message: '0x000000010000000600000000...'
+                attestation: '0xb9a58c625c16c625c4a529cf...'
+                messageHash: '0x1234567890abcdef...'
+                executionTxHash: '0xabc123...'
+                operatorFee: '10000'
+                createdAt: '2024-01-15T10:30:00.000Z'
+                completedAt: '2024-01-15T10:30:45.000Z'
+        '404':
+          description: Relay job not found
+
+components:
+  schemas:
+    OperatorStatus:
+      type: object
+      required:
+        - isRunning
+        - isConnected
+        - operatorAddress
+      properties:
+        isRunning:
+          type: boolean
+          description: Whether the operator service is currently running
+        isConnected:
+          type: boolean
+          description: Whether the operator is connected to the coordinator via SSE
+        operatorAddress:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{40}$'
+          description: Ethereum address of the operator
+
+    RelayJobStatusSummary:
+      type: object
+      required:
+        - totalJobs
+        - pending
+        - fetchingAttestation
+        - claiming
+        - executing
+        - completed
+        - failed
+      properties:
+        totalJobs:
+          type: integer
+          minimum: 0
+          description: Total number of relay jobs
+        pending:
+          type: integer
+          minimum: 0
+          description: Jobs waiting to be processed
+        fetchingAttestation:
+          type: integer
+          minimum: 0
+          description: Jobs currently fetching attestation from Circle Iris API
+        claiming:
+          type: integer
+          minimum: 0
+          description: Jobs claiming task in OperatorRegistry
+        executing:
+          type: integer
+          minimum: 0
+          description: Jobs currently executing the task transaction
+        completed:
+          type: integer
+          minimum: 0
+          description: Successfully completed jobs
+        failed:
+          type: integer
+          minimum: 0
+          description: Failed jobs
+
+    RelayJob:
+      type: object
+      required:
+        - id
+        - transactionHash
+        - sourceChainId
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the relay job
+        transactionHash:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{64}$'
+          description: Source chain transaction hash that initiated the CCTP burn
+        sourceChainId:
+          type: integer
+          description: CCTP domain ID of the source chain (e.g., 6 for Base Sepolia)
+        status:
+          type: string
+          enum:
+            - pending
+            - fetching_attestation
+            - claiming
+            - executing
+            - completed
+            - failed
+          description: Current status of the relay job
+        message:
+          type: string
+          description: CCTP message bytes (hex encoded)
+        attestation:
+          type: string
+          description: Circle attestation signature (hex encoded)
+        messageHash:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{64}$'
+          description: Keccak256 hash of the CCTP message
+        executionTxHash:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{64}$'
+          description: Transaction hash of the task execution on destination chain
+        operatorFee:
+          type: string
+          description: Fee earned by the operator (in wei)
+        error:
+          type: string
+          description: Error message if the job failed
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the job was created
+        completedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the job completed or failed
+
+    RelayJobStatus:
+      type: string
+      enum:
+        - pending
+        - fetching_attestation
+        - claiming
+        - executing
+        - completed
+        - failed
+      description: |
+        Status of a relay job:
+        - `pending`: Job received, waiting to be processed
+        - `fetching_attestation`: Polling Circle Iris API for attestation
+        - `claiming`: Claiming task in OperatorRegistry for exclusive execution
+        - `executing`: Submitting task transaction to destination chain
+        - `completed`: Task successfully executed
+        - `failed`: Task failed (see error field for details)

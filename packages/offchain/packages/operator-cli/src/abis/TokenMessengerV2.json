@@ -1,0 +1,33 @@
+[
+  {
+    "inputs": [
+      { "name": "amount", "type": "uint256" },
+      { "name": "destinationDomain", "type": "uint32" },
+      { "name": "mintRecipient", "type": "bytes32" },
+      { "name": "burnToken", "type": "address" },
+      { "name": "destinationCaller", "type": "bytes32" },
+      { "name": "maxFee", "type": "uint256" },
+      { "name": "minFinalityThreshold", "type": "uint32" },
+      { "name": "hookData", "type": "bytes" }
+    ],
+    "name": "depositForBurnWithHook",
+    "outputs": [{ "name": "nonce", "type": "uint64" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "name": "amount", "type": "uint256" },
+      { "name": "destinationDomain", "type": "uint32" },
+      { "name": "mintRecipient", "type": "bytes32" },
+      { "name": "burnToken", "type": "address" },
+      { "name": "destinationCaller", "type": "bytes32" },
+      { "name": "maxFee", "type": "uint256" },
+      { "name": "minFinalityThreshold", "type": "uint32" }
+    ],
+    "name": "depositForBurn",
+    "outputs": [{ "name": "nonce", "type": "uint64" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

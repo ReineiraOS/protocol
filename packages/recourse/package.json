@@ -1,0 +1,27 @@
+{
+  "name": "@reineira-os/recourse",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "compile": "forge build",
+    "test": "forge test -vv",
+    "test:unit": "forge test --match-path 'test/unit/*' -vv",
+    "test:integration": "forge test --match-path 'test/integration/*' -vv",
+    "test:gas": "forge test --gas-report",
+    "test:coverage": "forge coverage",
+    "test:coverage:lcov": "forge coverage --report lcov --report-file lcov.info",
+    "clean": "forge clean",
+    "lint": "solhint 'contracts/**/*.sol'",
+    "format": "forge fmt"
+  },
+  "dependencies": {
+    "@fhenixprotocol/cofhe-contracts": "0.1.3",
+    "@cofhe/mock-contracts": "^0.5.2",
+    "@cofhe/foundry-plugin": "^0.5.2",
+    "@openzeppelin/contracts": "~5.2.0",
+    "@openzeppelin/contracts-upgradeable": "~5.2.0",
+    "@reineira-os/shared": "workspace:*",
+    "fhenix-confidential-contracts": "github:FhenixProtocol/fhenix-confidential-contracts#0823e57e320c1c72e0caee7faeebc4d3a0710373"
+  },
+  "license": "FSL-1.1-ALv2"
+}

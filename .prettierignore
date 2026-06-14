@@ -1,0 +1,12 @@
+node_modules
+dist
+out
+artifacts
+cache
+foundry-cache
+broadcast
+coverage
+.aws-sam
+typechain-types
+pnpm-lock.yaml
+CHANGELOG.md

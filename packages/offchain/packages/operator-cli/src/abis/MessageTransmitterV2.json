@@ -1,0 +1,19 @@
+[
+  {
+    "inputs": [
+      { "name": "message", "type": "bytes" },
+      { "name": "attestation", "type": "bytes" }
+    ],
+    "name": "receiveMessage",
+    "outputs": [{ "name": "success", "type": "bool" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "name": "nonce", "type": "uint64" }],
+    "name": "usedNonces",
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

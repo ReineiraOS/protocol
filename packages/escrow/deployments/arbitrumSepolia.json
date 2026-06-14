@@ -1,0 +1,22 @@
+{
+  "network": "arbitrumSepolia",
+  "chainId": "421614",
+  "deployer": "0xa2293acEC08A6fb0A622b976ed2cF4aF1edEA292",
+  "deployedAt": "2026-06-14T18:00:00.000Z",
+  "contracts": {
+    "ConfidentialUSDC": "0x42E47f9bA89712C317f60A72C81A610A2b68c48a",
+    "ConfidentialEscrow": {
+      "proxy": "0xF50A9CF008a79CFCA39aa9a345aa06e8D12727E2",
+      "implementation": "0xe734660419626d1d1714901416e467da63a92367"
+    },
+    "CCTPV2ConfidentialEscrowReceiver": {
+      "proxy": "0xe0E6CC9Ee62Fa36b96eC4F50CDc462Fd14aa0fD3",
+      "implementation": "0xaeed75f58bc498ff5954f9d9071b8cc8d09ede7f"
+    }
+  },
+  "external": {
+    "USDC": "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
+    "CCTPV2MessageTransmitter": "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
+    "trustedForwarder": "0x7ceA357B5AC0639F89F9e378a1f03Aa5005C0a25"
+  }
+}

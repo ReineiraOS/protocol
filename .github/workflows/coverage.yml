@@ -1,0 +1,72 @@
+name: Coverage
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/*/contracts/**"
+      - "packages/*/test/**"
+      - "packages/*/foundry.toml"
+      - "packages/*/package.json"
+      - "scripts/check-coverage.sh"
+      - ".github/workflows/coverage.yml"
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24"
+  PNPM_VERSION: "9"
+  FOUNDRY_PROFILE: default
+  LINE_THRESHOLD: "85"
+  FUNC_THRESHOLD: "80"
+
+jobs:
+  coverage:
+    name: Coverage — ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [escrow, orchestration, recourse]
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Generate coverage (lcov)
+        continue-on-error: true
+        run: pnpm --filter @reineira-os/${{ matrix.package }} run test:coverage:lcov
+
+      - name: Check coverage thresholds
+        if: success()
+        continue-on-error: true
+        env:
+          LINE_THRESHOLD: ${{ env.LINE_THRESHOLD }}
+          FUNC_THRESHOLD: ${{ env.FUNC_THRESHOLD }}
+        run: ./scripts/check-coverage.sh packages/${{ matrix.package }}/lcov.info ${{ matrix.package }}
+
+      - name: Upload lcov report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: lcov-${{ matrix.package }}
+          path: packages/${{ matrix.package }}/lcov.info
+          retention-days: 30

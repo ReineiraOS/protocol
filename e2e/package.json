@@ -1,0 +1,20 @@
+{
+  "name": "@reineira-os/e2e",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "deploy": "tsx infra/deploy.ts"
+  },
+  "dependencies": {
+    "@reineira-os/sdk": "workspace:*",
+    "ethers": "^6.16.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0",
+    "@types/node": "^20.0.0"
+  }
+}

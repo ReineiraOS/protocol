@@ -1,0 +1,9 @@
+packages:
+  - "packages/*"
+  - "packages/offchain/packages/*"
+  - "e2e"
+allowBuilds:
+  '@nestjs/core': false
+  esbuild: false
+  keccak: false
+  secp256k1: false

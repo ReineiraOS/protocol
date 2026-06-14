@@ -1,0 +1,42 @@
+{
+  "name": "@reineira-os/protocol",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ReineiraOS — FHE-encrypted stablecoin infrastructure on Arbitrum",
+  "scripts": {
+    "compile": "pnpm -r --filter './packages/**' run compile",
+    "compile:shared": "pnpm --filter @reineira-os/shared run compile",
+    "compile:escrow": "pnpm --filter @reineira-os/escrow run compile",
+    "compile:recourse": "pnpm --filter @reineira-os/recourse run compile",
+    "compile:orchestration": "pnpm --filter @reineira-os/orchestration run compile",
+    "test": "pnpm -r run test",
+    "test:escrow": "pnpm --filter @reineira-os/escrow run test",
+    "test:recourse": "pnpm --filter @reineira-os/recourse run test",
+    "test:orchestration": "pnpm --filter @reineira-os/orchestration run test",
+    "test:sdk": "pnpm --filter @reineira-os/sdk run test",
+    "test:e2e": "bash e2e/run.sh",
+    "clean": "pnpm -r run clean",
+    "lint": "pnpm -r run lint",
+    "format": "prettier --write '**/*.{ts,js,json,sol,md}'",
+    "format:check": "prettier --check '**/*.{ts,js,json,sol,md}'"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^12.0.6",
+    "@semantic-release/npm": "^13.1.5",
+    "@semantic-release/release-notes-generator": "^14.1.0",
+    "conventional-changelog-conventionalcommits": "^9.3.0",
+    "forge-std": "github:foundry-rs/forge-std",
+    "prettier": "^3.2.0",
+    "prettier-plugin-solidity": "^1.3.0",
+    "semantic-release": "^25.0.3",
+    "solhint": "^6.2.1"
+  },
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "license": "SEE LICENSE IN LICENSE"
+}

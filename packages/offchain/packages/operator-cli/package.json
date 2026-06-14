@@ -1,0 +1,27 @@
+{
+  "name": "@reineira-ops/operator-cli",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "description": "Reineira operator CLI",
+  "main": "dist/index.js",
+  "bin": {
+    "reineira-operator": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@reineira-ops/shared": "workspace:*",
+    "@cofhe/sdk": "^0.5.2",
+    "chalk": "^4.1.2",
+    "commander": "^12.0.0",
+    "dotenv": "^16.4.0",
+    "ethers": "^6.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.3.0"
+  }
+}

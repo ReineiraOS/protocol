@@ -1,0 +1,272 @@
+openapi: 3.0.3
+info:
+  title: Reineira CCTP Bridge Coordinator API
+  description: |
+    ## Overview
+    The Reineira Coordinator service orchestrates cross-chain USDC transfers via Circle's Cross-Chain Transfer Protocol (CCTP).
+    It manages task distribution to registered operators who execute bridge transactions on destination chains.
+
+    ## How It Works
+    1. A CCTP burn transaction occurs on the source chain (e.g., Base Sepolia)
+    2. The transaction is submitted to the coordinator via `/bridges/cctp/transactions`
+    3. The coordinator distributes the task to a subscribed operator
+    4. The operator fetches the Circle attestation and executes the relay on the destination chain
+
+    ## Supported Chains
+    - **Source**: Base Sepolia, Ethereum Sepolia, Arbitrum Sepolia
+    - **Destination**: Arbitrum Sepolia (primary)
+
+  version: 0.1.0
+  contact:
+    name: Reineira Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3001
+    description: Local development server
+
+tags:
+  - name: CCTP
+    description: Circle CCTP bridge transaction submission and tracking
+  - name: Operators
+    description: Operator subscription and statistics
+
+paths:
+  /bridges/cctp/transactions:
+    post:
+      tags:
+        - CCTP
+      summary: Submit a CCTP burn transaction for bridging
+      description: |
+        Submit a CCTP burn transaction hash from the source chain for cross-chain relay.
+        The coordinator queues the transaction and distributes it to an available operator
+        for execution on the destination chain.
+
+        The operator will:
+        1. Fetch the Circle attestation for the burn transaction
+        2. Claim the task in the OperatorRegistry for exclusive execution
+        3. Execute the relay via TaskExecutor on the destination chain
+      operationId: submitBridgeTransaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitBridgeTransactionDto'
+            examples:
+              baseToArbitrum:
+                summary: Base Sepolia to Arbitrum Sepolia
+                value:
+                  transactionHash: "0x907e4defd98dd9e202db20fa4242eda19b439856ccd40866be91f2ba5fce375c"
+                  sourceChainId: 84532
+              ethToArbitrum:
+                summary: Ethereum Sepolia to Arbitrum Sepolia
+                value:
+                  transactionHash: "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321"
+                  sourceChainId: 11155111
+      responses:
+        '202':
+          description: Transaction accepted and queued for bridging
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BridgeTransactionResponseDto'
+              example:
+                id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                status: "queued"
+                message: "CCTP transaction queued for relay"
+        '400':
+          description: Invalid transaction hash or chain ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              examples:
+                invalidHash:
+                  summary: Invalid transaction hash
+                  value:
+                    statusCode: 400
+                    message:
+                      - "Transaction hash must be 0x followed by 64 hex characters"
+                    error: "Bad Request"
+                invalidChainId:
+                  summary: Invalid chain ID
+                  value:
+                    statusCode: 400
+                    message:
+                      - "sourceChainId must be a supported CCTP chain"
+                    error: "Bad Request"
+
+  /operators/{address}/subscribe:
+    get:
+      tags:
+        - Operators
+      summary: Subscribe to bridge events (SSE)
+      description: |
+        Subscribe to receive bridge task events via Server-Sent Events (SSE).
+        Operators use this endpoint to receive CCTP transactions that need to be relayed.
+
+        When a new bridge transaction is submitted, the coordinator selects an operator
+        and pushes a `relay` event containing the transaction details.
+      operationId: subscribeToEvents
+      parameters:
+        - name: address
+          in: path
+          required: true
+          description: Ethereum address of the subscribing operator (must be registered in OperatorRegistry)
+          schema:
+            type: string
+            pattern: ^0x[a-fA-F0-9]{40}$
+          example: "0xa2293acEC08A6fb0A622b976ed2cF4aF1edEA292"
+      responses:
+        '200':
+          description: SSE stream established
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/BridgeEventDto'
+              example: |
+                event: relay
+                id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                data: {"id":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","transactionHash":"0x907e4defd98dd9e202db20fa4242eda19b439856ccd40866be91f2ba5fce375c","sourceChainId":84532,"taskType":"0x7f590974bc33c0198dbfa46b88b7e202d51129d9e12c8181dc58fc3f234def67","createdAt":"2024-01-15T10:30:00.000Z"}
+
+  /operators/stats:
+    get:
+      tags:
+        - Operators
+      summary: Get operator statistics
+      description: Returns statistics about currently subscribed operators.
+      operationId: getOperatorStats
+      responses:
+        '200':
+          description: Operator statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperatorStatsDto'
+              example:
+                subscribedCount: 3
+                operators:
+                  - "0xa2293acEC08A6fb0A622b976ed2cF4aF1edEA292"
+                  - "0xabcdef1234567890abcdef1234567890abcdef12"
+                  - "0x7890abcdef1234567890abcdef1234567890abcd"
+
+components:
+  schemas:
+    SubmitBridgeTransactionDto:
+      type: object
+      required:
+        - transactionHash
+        - sourceChainId
+      properties:
+        transactionHash:
+          type: string
+          pattern: ^0x[a-fA-F0-9]{64}$
+          description: Transaction hash of the CCTP burn (depositForBurn) on the source chain
+          example: "0x907e4defd98dd9e202db20fa4242eda19b439856ccd40866be91f2ba5fce375c"
+        sourceChainId:
+          type: integer
+          minimum: 0
+          description: |
+            Chain ID of the source chain. Supported chains:
+            - 84532 (Base Sepolia)
+            - 11155111 (Ethereum Sepolia)
+            - 421614 (Arbitrum Sepolia)
+          example: 84532
+
+    BridgeTransactionResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for tracking the bridge request
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        status:
+          type: string
+          enum: [queued, assigned, completed, failed]
+          description: Current status of the bridge request
+          example: "queued"
+        message:
+          type: string
+          description: Human-readable status message
+          example: "CCTP transaction queued for relay"
+
+    BridgeEventDto:
+      type: object
+      description: Event sent to operators via SSE when a bridge task is assigned
+      required:
+        - id
+        - transactionHash
+        - sourceChainId
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for this bridge task
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        transactionHash:
+          type: string
+          pattern: ^0x[a-fA-F0-9]{64}$
+          description: Source chain transaction hash (CCTP burn)
+          example: "0x907e4defd98dd9e202db20fa4242eda19b439856ccd40866be91f2ba5fce375c"
+        sourceChainId:
+          type: integer
+          description: CCTP domain ID of the source chain
+          example: 84532
+        taskType:
+          type: string
+          description: |
+            Task type identifier (keccak256 hash).
+            For CCTP relay: `0x7f590974bc33c0198dbfa46b88b7e202d51129d9e12c8181dc58fc3f234def67`
+          example: "0x7f590974bc33c0198dbfa46b88b7e202d51129d9e12c8181dc58fc3f234def67"
+        taskHash:
+          type: string
+          description: Computed task hash for claiming in OperatorRegistry
+          example: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+        message:
+          type: string
+          description: CCTP message bytes (hex encoded, if pre-fetched)
+        attestation:
+          type: string
+          description: Circle attestation signature (hex encoded, if pre-fetched)
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the task was created
+          example: "2024-01-15T10:30:00.000Z"
+
+    OperatorStatsDto:
+      type: object
+      properties:
+        subscribedCount:
+          type: integer
+          description: Number of operators currently connected via SSE
+          example: 3
+        operators:
+          type: array
+          items:
+            type: string
+            pattern: ^0x[a-fA-F0-9]{40}$
+          description: List of connected operator addresses
+          example:
+            - "0xa2293acEC08A6fb0A622b976ed2cF4aF1edEA292"
+            - "0xabcdef1234567890abcdef1234567890abcdef12"
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 400
+        message:
+          type: array
+          items:
+            type: string
+          example:
+            - "Transaction hash must be 0x followed by 64 hex characters"
+        error:
+          type: string
+          example: "Bad Request"

@@ -1,0 +1,69 @@
+{
+  "name": "@reineira-os/sdk",
+  "version": "1.0.0",
+  "description": "TypeScript SDK for ReineiraOS — programmable confidential settlement on Arbitrum. FHE-encrypted escrows, recourse pools, cross-chain CCTP bridging.",
+  "license": "MIT",
+  "author": "Reineira <engineering@reineira.xyz> (https://reineira.xyz)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ReineiraOS/protocol.git",
+    "directory": "packages/sdk"
+  },
+  "homepage": "https://github.com/ReineiraOS/protocol/tree/main/packages/sdk#readme",
+  "bugs": {
+    "url": "https://github.com/ReineiraOS/protocol/issues"
+  },
+  "keywords": [
+    "reineira",
+    "fhe",
+    "escrow",
+    "confidential",
+    "arbitrum",
+    "web3",
+    "sdk",
+    "stablecoin",
+    "usdc",
+    "cctp",
+    "recourse",
+    "fhenix"
+  ],
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "ethers": "^6.16.0",
+    "@cofhe/sdk": "^0.5.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0",
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

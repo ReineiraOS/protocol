@@ -1,0 +1,77 @@
+name: Aderyn
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/*/contracts/**"
+      - "packages/*/foundry.toml"
+      - "aderyn.toml"
+      - ".github/workflows/aderyn.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24"
+  PNPM_VERSION: "9"
+  ADERYN_VERSION: "0.6.8"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  aderyn:
+    name: Aderyn — ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [escrow, orchestration, recourse]
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Aderyn
+        run: npm install -g @cyfrin/aderyn@${{ env.ADERYN_VERSION }}
+
+      - name: Compile shared
+        run: cd packages/shared && forge build
+
+      - name: Compile package
+        run: cd packages/${{ matrix.package }} && forge build --skip test
+
+      - name: Run Aderyn
+        run: aderyn packages/${{ matrix.package }} --output aderyn-${{ matrix.package }}.md
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aderyn-${{ matrix.package }}
+          path: aderyn-${{ matrix.package }}.md
+          retention-days: 30
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: aderyn-${{ matrix.package }}
+          path: aderyn-${{ matrix.package }}.md

@@ -1,0 +1,23 @@
+This repository contains multiple components under different licenses.
+
+## Core Protocol (packages/escrow, packages/recourse, packages/orchestration)
+
+Functional Source License 1.1, ALv2 Future License (FSL-1.1-ALv2) — see licenses/FSL-1.1-ALv2.md
+Permitted for any use except a Competing Use; each version converts to the
+Apache License 2.0 on the second anniversary of its release.
+
+## Shared Interfaces, Libraries, Base Contracts (packages/shared)
+
+Apache License 2.0 — see licenses/APACHE-2.0.md
+
+## SDK (packages/sdk)
+
+MIT License — see licenses/MIT.md
+
+## Operator / Off-Chain Services (packages/offchain)
+
+Apache License 2.0 — see licenses/APACHE-2.0.md
+
+---
+
+Licensor: Reineira Labs Limited. Copyright (c) 2026 Reineira Labs Limited.

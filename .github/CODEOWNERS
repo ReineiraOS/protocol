@@ -1,0 +1,21 @@
+# Code owners — GitHub auto-requests review from these owners on matching paths.
+# Owners below are repo collaborators with write/admin access (verified via the
+# GitHub API). If the @ReineiraOS/internal-reineira-team team is granted repo
+# access, prefer replacing the individual lists with that team.
+
+# Default — any maintainer may review
+*                               @VladVelik @0xkkkn @grimnote @madschristensen99 @jishumi @vergil-dv
+
+# Security-sensitive core protocol (FSL-1.1-ALv2) — require an admin / protocol lead
+/packages/escrow/               @VladVelik @0xkkkn
+/packages/recourse/            @VladVelik @0xkkkn
+/packages/orchestration/        @VladVelik @0xkkkn
+/packages/shared/               @VladVelik @0xkkkn
+
+# Licensing, governance, security policy, and CI — require an admin
+/LICENSE                        @VladVelik @0xkkkn
+/NOTICE                         @VladVelik @0xkkkn
+/licenses/                      @VladVelik @0xkkkn
+/CLA.md                         @VladVelik @0xkkkn
+/SECURITY.md                    @VladVelik @0xkkkn
+/.github/                       @VladVelik @0xkkkn

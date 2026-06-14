@@ -1,0 +1,65 @@
+[
+  {
+    "inputs": [{ "internalType": "bytes", "name": "payload", "type": "bytes" }],
+    "name": "executeTask",
+    "outputs": [{ "internalType": "bytes", "name": "", "type": "bytes" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "bytes", "name": "payload", "type": "bytes" }],
+    "name": "validateTask",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "bytes", "name": "payload", "type": "bytes" }],
+    "name": "getTaskHash",
+    "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "taskType",
+    "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "escrowReceiver",
+    "outputs": [
+      { "internalType": "contract ICCTPV2EscrowReceiver", "name": "", "type": "address" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "executor",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "bytes32", "name": "messageHash", "type": "bytes32" },
+      { "indexed": true, "internalType": "uint256", "name": "escrowId", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
+    ],
+    "name": "EscrowSettled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "oldReceiver", "type": "address" },
+      { "indexed": true, "internalType": "address", "name": "newReceiver", "type": "address" }
+    ],
+    "name": "EscrowReceiverUpdated",
+    "type": "event"
+  }
+]

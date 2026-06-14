@@ -1,0 +1,28 @@
+{
+  "network": "arbitrumSepolia",
+  "chainId": "421614",
+  "deployer": "0xa2293acEC08A6fb0A622b976ed2cF4aF1edEA292",
+  "deployedAt": "2026-06-14T18:00:00.000Z",
+  "contracts": {
+    "ConfidentialUSDC": "0x42E47f9bA89712C317f60A72C81A610A2b68c48a",
+    "ConfidentialPolicyRegistry": {
+      "proxy": "0x17a3222BD2167C7620815CD6a1C8d215F11CAa25",
+      "implementation": "0x6420eca79233e831450018292217b6214cb5353e"
+    },
+    "ConfidentialRecoursePool": {
+      "implementation": "0x75189520f2f618b2E52eeF1007CcbCeAAbB8446b"
+    },
+    "ConfidentialCoverageManager": {
+      "proxy": "0x636084Da863569bd90c94C1C7a5180eBF8F88AAd",
+      "implementation": "0x19d06d2812e56dd8097ee2d587fe9ca45a63a0eb"
+    },
+    "ConfidentialPoolFactory": {
+      "proxy": "0x278c43aB5B8726EbdFD6E7352c128aDA48269442",
+      "implementation": "0x1af525bdbd758a44c26f781d1c6e55b3e40ae18c"
+    }
+  },
+  "external": {
+    "ConfidentialEscrow": "0xF50A9CF008a79CFCA39aa9a345aa06e8D12727E2",
+    "trustedForwarder": "0x7ceA357B5AC0639F89F9e378a1f03Aa5005C0a25"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "filter_paths": "(test/|mocks/|script/|node_modules/|out/|forge-cache/|foundry-cache/)",
+  "exclude_informational": false,
+  "exclude_low": false,
+  "exclude_medium": false,
+  "exclude_high": false,
+  "exclude_optimization": true,
+  "disable_color": true,
+  "solc_remaps": [
+    "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+    "@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/",
+    "@fhenixprotocol/cofhe-contracts/=node_modules/@fhenixprotocol/cofhe-contracts/",
+    "@cofhe/mock-contracts/=node_modules/@cofhe/mock-contracts/",
+    "@cofhe/foundry-plugin/=node_modules/@cofhe/foundry-plugin/",
+    "fhenix-confidential-contracts/=node_modules/fhenix-confidential-contracts/",
+    "@reineira-os/shared/=node_modules/@reineira-os/shared/",
+    "forge-std/=../../node_modules/forge-std/src/",
+    "hardhat/=../../node_modules/forge-std/src/"
+  ]
+}

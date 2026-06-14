@@ -1,0 +1,34 @@
+ReineiraOS Protocol
+Copyright (c) 2026 Reineira Labs Limited
+
+This repository contains software licensed under multiple licenses.
+See the LICENSE file in the root directory for details.
+
+CORE PROTOCOL (packages/escrow, recourse, orchestration)
+Licensed under the Functional Source License 1.1, ALv2 Future License
+(FSL-1.1-ALv2). You may use this software for any purpose except a Competing
+Use (as defined in the license). Each version converts to the Apache License
+2.0 on the second anniversary of the date Reineira Labs Limited makes that
+version available.
+
+SHARED INTERFACES / LIBRARIES / BASE CONTRACTS (packages/shared)
+Licensed under the Apache License 2.0.
+
+SDK (packages/sdk)
+Licensed under the MIT License.
+
+OPERATOR / OFF-CHAIN SERVICES (packages/offchain)
+Licensed under the Apache License 2.0.
+
+THIRD-PARTY / VENDORED COMPONENTS
+The following files are derived from, or describe the on-chain surface of,
+third-party protocols and carry their upstream license (BSD-3-Clause-Clear)
+as an exception to the per-package licenses above. They retain their SPDX
+BSD-3-Clause-Clear headers regardless of the package in which they reside:
+
+- packages/shared/contracts/common/FHEMeta.sol
+  Derived from Fhenix CoFHE (fhenix-confidential-contracts). BSD-3-Clause-Clear.
+- packages/shared/contracts/interfaces/external/ICCTPV2MessageTransmitter.sol
+- packages/shared/contracts/interfaces/external/ICCTPV2EscrowReceiver.sol
+  Interface declarations describing Circle's Cross-Chain Transfer Protocol
+  (CCTP) V2. BSD-3-Clause-Clear.
