@@ -59,8 +59,8 @@ EXCLUSIVE_WINDOW=60    # Exclusive claim window in seconds
 PERMISSIONLESS_DELAY=600 # Time until permissionless in seconds
 
 # Fee Configuration (in basis points, 100 = 1%)
-PROTOCOL_FEE_BPS=30    # 0.3% to protocol
-OPERATOR_FEE_BPS=50    # 0.5% to operator
+# No fees are charged; the operator fee parameter below is residual and to be removed.
+OPERATOR_FEE_BPS=50    # residual; to be removed
 ```
 
 ## Development
@@ -125,14 +125,14 @@ Store deployed addresses in `deployments/<network>.json`.
 
 ### Operator System Configuration
 
-| Parameter            | Value                |
-| -------------------- | -------------------- |
-| Min Stake            | 5000 GOV (18 dec)    |
-| Exclusive Window     | 60 seconds           |
-| Permissionless Delay | 600 seconds (10 min) |
-| Unbond Period        | 7 days               |
-| Protocol Fee BPS     | 30 (0.3%)            |
-| Operator Fee BPS     | 50 (0.5%)            |
+| Parameter            | Value                                              |
+| -------------------- | -------------------------------------------------- |
+| Min Stake            | 5000 GOV (18 dec)                                  |
+| Exclusive Window     | 60 seconds                                         |
+| Permissionless Delay | 600 seconds (10 min)                               |
+| Unbond Period        | 7 days                                             |
+| Protocol Fee         | None — protocol takes nothing                      |
+| Operator Fee         | None — operatorFeeBps (50) residual, to be removed |
 
 ## Admin Tasks
 

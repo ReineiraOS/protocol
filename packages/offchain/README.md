@@ -144,16 +144,16 @@ npx reineira-operator create-escrow --amount 100 --owner 0x... --resolver 0x...
 
 ## Operator Economics
 
-| Parameter            | Value       |
-| -------------------- | ----------- |
-| Minimum Stake        | 5,000 GOV   |
-| Exclusive Window     | 60 seconds  |
-| Permissionless Delay | 600 seconds |
-| Operator Fee         | 0.5%        |
-| Protocol Fee         | 0.3%        |
-| Unbond Period        | 7 days      |
+| Parameter            | Value                |
+| -------------------- | -------------------- |
+| Minimum Stake        | 5,000 GOV            |
+| Exclusive Window     | 60 seconds           |
+| Permissionless Delay | 600 seconds          |
+| Operator Fee         | None — to be removed |
+| Protocol Fee         | None (0%)            |
+| Unbond Period        | 7 days               |
 
-Operators stake GOV tokens to register. When assigned a task, they have a 60-second exclusive window to execute. After 600 seconds, anyone can execute the task permissionlessly. Operators earn 0.5% of relayed volume as fees.
+Operators stake GOV tokens to register. When assigned a task, they have a 60-second exclusive window to execute. After 600 seconds, anyone can execute the task permissionlessly. No fees are charged — neither protocol nor operator; the operator fee parameter (`operatorFeeBps`) is residual and slated for removal.
 
 ---
 
@@ -165,7 +165,7 @@ Operators stake GOV tokens to register. When assigned a task, they have a 60-sec
 | TaskExecutor                     | `0x4D239335f39E585Bb75631C4683538EFC496a5EB` |
 | FeeManager                       | `0x639f5cB99DcF9681A0461A1452c3845811d3308A` |
 | CCTPHandler                      | `0x575186a64B9FC49E135A2440DC4A1395edc0F3aD` |
-| Staking Token (GOV)              | `0xb847e041bB3bC78C3CD951286AbCa28593739D12` |
+| MockGovernanceToken (GOV, mock)  | `0xb847e041bB3bC78C3CD951286AbCa28593739D12` |
 | CCTPV2ConfidentialEscrowReceiver | `0xe0E6CC9Ee62Fa36b96eC4F50CDc462Fd14aa0fD3` |
 | ConfidentialEscrow               | `0xF50A9CF008a79CFCA39aa9a345aa06e8D12727E2` |
 

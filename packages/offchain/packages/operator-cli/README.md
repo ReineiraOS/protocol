@@ -239,7 +239,7 @@ stateDiagram-v2
 | TaskExecutor                     | `0x4D239335f39E585Bb75631C4683538EFC496a5EB` |
 | FeeManager                       | `0x639f5cB99DcF9681A0461A1452c3845811d3308A` |
 | CCTPHandler                      | `0x575186a64B9FC49E135A2440DC4A1395edc0F3aD` |
-| Staking Token (GOV)              | `0xb847e041bB3bC78C3CD951286AbCa28593739D12` |
+| MockGovernanceToken (GOV, mock)  | `0xb847e041bB3bC78C3CD951286AbCa28593739D12` |
 | CCTPV2ConfidentialEscrowReceiver | `0xe0E6CC9Ee62Fa36b96eC4F50CDc462Fd14aa0fD3` |
 | ConfidentialEscrow               | `0xF50A9CF008a79CFCA39aa9a345aa06e8D12727E2` |
 
@@ -264,13 +264,13 @@ stateDiagram-v2
 
 ## Economics
 
-| Parameter        | Value      |
-| ---------------- | ---------- |
-| Minimum Stake    | 5,000 GOV  |
-| Unbond Period    | 7 days     |
-| Exclusive Window | 60 seconds |
-| Protocol Fee     | 0.3%       |
-| Operator Fee     | 0.5%       |
+| Parameter        | Value                |
+| ---------------- | -------------------- |
+| Minimum Stake    | 5,000 GOV            |
+| Unbond Period    | 7 days               |
+| Exclusive Window | 60 seconds           |
+| Protocol Fee     | None (0%)            |
+| Operator Fee     | None — to be removed |
 
 ## Example Session
 
