@@ -75,11 +75,11 @@ Store deployed addresses in `deployments/<network>.json`.
 
 ### Arbitrum Sepolia Deployments
 
-| Contract                         | Address                                      |
-| -------------------------------- | -------------------------------------------- |
-| Confidential token (interim)     | `0x42E47f9bA89712C317f60A72C81A610A2b68c48a` |
-| ConfidentialEscrow               | `0xbe1eEB78504B71beEE1b33D3E3D367A2F9a549A6` |
-| CCTPV2ConfidentialEscrowReceiver | `0x67AE0C5fE86716441B38b73A66F21c6aC8e338d0` |
+| Contract                            | Address                                      |
+| ----------------------------------- | -------------------------------------------- |
+| Confidential token (mock / interim) | `0x42E47f9bA89712C317f60A72C81A610A2b68c48a` |
+| ConfidentialEscrow (proxy)          | `0xF50A9CF008a79CFCA39aa9a345aa06e8D12727E2` |
+| CCTPV2ConfidentialEscrowReceiver    | `0xe0E6CC9Ee62Fa36b96eC4F50CDc462Fd14aa0fD3` |
 
 The confidential token above is an **interim** deployment. The protocol is token-agnostic; the configured confidential token is expected to be replaced by a standardized one (see the `confidentialUsdc` note in `CCTPV2ConfidentialEscrowReceiver`).
 
