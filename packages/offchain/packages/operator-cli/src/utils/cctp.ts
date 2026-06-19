@@ -27,8 +27,8 @@ export const CCTP_ADDRESSES = {
   },
   // Contracts deployed on Arbitrum Sepolia (destination chain)
   arbitrumSepoliaContracts: {
-    escrowReceiver: '0x67AE0C5fE86716441B38b73A66F21c6aC8e338d0',
-    escrow: '0xbe1eEB78504B71beEE1b33D3E3D367A2F9a549A6',
+    escrowReceiver: '0xe0E6CC9Ee62Fa36b96eC4F50CDc462Fd14aa0fD3',
+    escrow: '0xF50A9CF008a79CFCA39aa9a345aa06e8D12727E2',
   },
 } as const
 

@@ -98,17 +98,17 @@ Store deployed addresses in `deployments/<network>.json`.
 | Contract            | Address                                      |
 | ------------------- | -------------------------------------------- |
 | MockGovernanceToken | `0xb847e041bB3bC78C3CD951286AbCa28593739D12` |
-| OperatorRegistry    | `0x1422ccC8B42079D810835631a5DFE1347a602959` |
-| FeeManager          | `0x5a11DC96CEfd2fB46759F08aCE49515aa23F0156` |
-| TaskExecutor        | `0x7F24077A3341Af05E39fC232A77c21A03Bbd2262` |
-| CCTPHandler         | `0xb37A83461B01097e1E440405264dA59EE9a3F273` |
+| OperatorRegistry    | `0x5Ac3a3750e0a9f7d4ddBC0B52c3f13E8f927FB59` |
+| FeeManager          | `0x639f5cB99DcF9681A0461A1452c3845811d3308A` |
+| TaskExecutor        | `0x4D239335f39E585Bb75631C4683538EFC496a5EB` |
+| CCTPHandler         | `0x575186a64B9FC49E135A2440DC4A1395edc0F3aD` |
 
 ### External Dependencies (Arbitrum Sepolia)
 
 | Contract                    | Address                                      |
 | --------------------------- | -------------------------------------------- |
 | Trusted Forwarder (ERC2771) | `0x7ceA357B5AC0639F89F9e378a1f03Aa5005C0a25` |
-| Escrow Receiver             | `0x198Ca6b6116ef0de2b443F4602DbeD8f052C014d` |
+| Escrow Receiver             | `0xe0E6CC9Ee62Fa36b96eC4F50CDc462Fd14aa0fD3` |
 
 ### Ethereum Sepolia Deployments
 

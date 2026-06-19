@@ -109,8 +109,8 @@ npm run start -w @reineira-os/operator
 export RPC_URL=https://arbitrum-sepolia-rpc.publicnode.com
 export RPC_URL_SOURCE=https://ethereum-sepolia-rpc.publicnode.com
 export PRIVATE_KEY=0x...
-export OPERATOR_REGISTRY_ADDRESS=0x1422ccC8B42079D810835631a5DFE1347a602959
-export TASK_EXECUTOR_ADDRESS=0x7F24077A3341Af05E39fC232A77c21A03Bbd2262
+export OPERATOR_REGISTRY_ADDRESS=0x5Ac3a3750e0a9f7d4ddBC0B52c3f13E8f927FB59
+export TASK_EXECUTOR_ADDRESS=0x4D239335f39E585Bb75631C4683538EFC496a5EB
 ```
 
 ### Commands
@@ -161,13 +161,13 @@ Operators stake GOV tokens to register. When assigned a task, they have a 60-sec
 
 | Contract                         | Address                                      |
 | -------------------------------- | -------------------------------------------- |
-| OperatorRegistry                 | `0x1422ccC8B42079D810835631a5DFE1347a602959` |
-| TaskExecutor                     | `0x7F24077A3341Af05E39fC232A77c21A03Bbd2262` |
-| FeeManager                       | `0x5a11DC96CEfd2fB46759F08aCE49515aa23F0156` |
-| CCTPHandler                      | `0xb37A83461B01097e1E440405264dA59EE9a3F273` |
+| OperatorRegistry                 | `0x5Ac3a3750e0a9f7d4ddBC0B52c3f13E8f927FB59` |
+| TaskExecutor                     | `0x4D239335f39E585Bb75631C4683538EFC496a5EB` |
+| FeeManager                       | `0x639f5cB99DcF9681A0461A1452c3845811d3308A` |
+| CCTPHandler                      | `0x575186a64B9FC49E135A2440DC4A1395edc0F3aD` |
 | Staking Token (GOV)              | `0xb847e041bB3bC78C3CD951286AbCa28593739D12` |
-| CCTPV2ConfidentialEscrowReceiver | `0x67AE0C5fE86716441B38b73A66F21c6aC8e338d0` |
-| ConfidentialEscrow               | `0xbe1eEB78504B71beEE1b33D3E3D367A2F9a549A6` |
+| CCTPV2ConfidentialEscrowReceiver | `0xe0E6CC9Ee62Fa36b96eC4F50CDc462Fd14aa0fD3` |
+| ConfidentialEscrow               | `0xF50A9CF008a79CFCA39aa9a345aa06e8D12727E2` |
 
 ---
 
