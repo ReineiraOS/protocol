@@ -27,6 +27,14 @@ interface IEscrowEvents {
     /// @param coverageManager The newly assigned coverage manager
     event CoverageManagerSet(address indexed coverageManager);
 
+    /// @notice Emitted when a payment token is added to the per-escrow allow-list
+    /// @param token The token address that is now allowed at create
+    event TokenAllowed(address indexed token);
+
+    /// @notice Emitted when a payment token is removed from the per-escrow allow-list
+    /// @param token The token address that is no longer allowed at create
+    event TokenRemoved(address indexed token);
+
     /// @notice Emitted when a fee is stamped onto an escrow
     /// @dev For the confidential branch, `bps` is emitted as 0 (encrypted state cannot be in events).
     /// @param escrowId The escrow identifier

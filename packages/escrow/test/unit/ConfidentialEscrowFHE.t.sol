@@ -402,4 +402,122 @@ contract ConfidentialEscrowFHETest is FHETestBase {
         emit IEscrowEvents.EscrowBatchRedeemed(ids);
         escrow.redeemMultiple(ids);
     }
+
+    function _createEscrowWithToken(address token_) internal returns (uint256) {
+        InEaddress memory encOwner = createInEaddress(escrowOwner, owner);
+        InEuint64 memory encAmount = createInEuint64(ESCROW_AMOUNT, owner);
+        bytes memory initData = abi.encode(encOwner, encAmount, token_);
+        vm.prank(owner);
+        return escrow.create(initData, address(0), "");
+    }
+
+    function _fundEscrowWith(uint256 escrowId, MockConfidentialToken token_) internal {
+        vm.prank(owner);
+        token_.mintPlain(payer, PAYMENT_AMOUNT);
+        vm.prank(payer);
+        token_.setOperator(address(escrow), uint48(block.timestamp + 86400));
+        InEuint64 memory encPayment = createInEuint64(PAYMENT_AMOUNT, payer);
+        vm.prank(payer);
+        escrow.fund(escrowId, encPayment);
+    }
+
+    function test_initialize_allowsDefaultToken() public view {
+        assertTrue(escrow.isAllowedToken(address(token)));
+    }
+
+    function test_create_typed_usesDefaultToken() public {
+        _createEscrow();
+        assertEq(escrow.paymentTokenOf(0), address(token));
+    }
+
+    function test_create_bytes_zeroToken_usesDefaultToken() public {
+        _createEscrowWithToken(address(0));
+        assertEq(escrow.paymentTokenOf(0), address(token));
+    }
+
+    function test_create_bytes_allowedToken_setsPaymentTokenOf() public {
+        vm.prank(owner);
+        MockConfidentialToken token2 = new MockConfidentialToken();
+        vm.prank(owner);
+        escrow.addAllowedToken(address(token2));
+
+        _createEscrowWithToken(address(token2));
+        assertEq(escrow.paymentTokenOf(0), address(token2));
+    }
+
+    function test_create_bytes_notAllowedToken_reverts() public {
+        vm.prank(owner);
+        MockConfidentialToken token2 = new MockConfidentialToken();
+
+        InEaddress memory encOwner = createInEaddress(escrowOwner, owner);
+        InEuint64 memory encAmount = createInEuint64(ESCROW_AMOUNT, owner);
+        bytes memory initData = abi.encode(encOwner, encAmount, address(token2));
+
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(EscrowLib.TokenNotAllowed.selector, address(token2)));
+        escrow.create(initData, address(0), "");
+    }
+
+    function test_addAllowedToken_revertsForNonOwner() public {
+        vm.prank(attacker);
+        vm.expectRevert();
+        escrow.addAllowedToken(attacker);
+    }
+
+    function test_addAllowedToken_emitsTokenAllowed() public {
+        vm.prank(owner);
+        MockConfidentialToken token2 = new MockConfidentialToken();
+        vm.prank(owner);
+        vm.expectEmit(true, false, false, false);
+        emit IEscrowEvents.TokenAllowed(address(token2));
+        escrow.addAllowedToken(address(token2));
+        assertTrue(escrow.isAllowedToken(address(token2)));
+    }
+
+    function test_removeAllowedToken_emitsTokenRemoved() public {
+        vm.prank(owner);
+        vm.expectEmit(true, false, false, false);
+        emit IEscrowEvents.TokenRemoved(address(token));
+        escrow.removeAllowedToken(address(token));
+        assertFalse(escrow.isAllowedToken(address(token)));
+    }
+
+    function test_fundAndRedeem_useSelectedToken() public {
+        vm.prank(owner);
+        MockConfidentialToken token2 = new MockConfidentialToken();
+        vm.prank(owner);
+        escrow.addAllowedToken(address(token2));
+
+        uint256 id = _createEscrowWithToken(address(token2));
+        _fundEscrowWith(id, token2);
+
+        vm.prank(escrowOwner);
+        vm.expectEmit(true, false, false, false);
+        emit IEscrowEvents.EscrowRedeemed(0);
+        escrow.redeem(0);
+    }
+
+    function test_redeemMultiple_acrossDifferentTokens() public {
+        vm.prank(owner);
+        MockConfidentialToken token2 = new MockConfidentialToken();
+        vm.prank(owner);
+        escrow.addAllowedToken(address(token2));
+
+        uint256 id0 = _createEscrow();
+        _fundEscrow(id0);
+        uint256 id1 = _createEscrowWithToken(address(token2));
+        _fundEscrowWith(id1, token2);
+
+        assertEq(escrow.paymentTokenOf(id0), address(token));
+        assertEq(escrow.paymentTokenOf(id1), address(token2));
+
+        uint256[] memory ids = new uint256[](2);
+        ids[0] = id0;
+        ids[1] = id1;
+
+        vm.prank(escrowOwner);
+        vm.expectEmit(false, false, false, true);
+        emit IEscrowEvents.EscrowBatchRedeemed(ids);
+        escrow.redeemMultiple(ids);
+    }
 }
