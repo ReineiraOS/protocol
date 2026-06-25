@@ -55,8 +55,8 @@ contract AgentValidationRegistry is IAgentValidationRegistry, TestnetCoreBase {
         bytes32 requestHash
     ) external {
         if (validatorAddress == address(0)) revert InvalidValidator();
-        if (requestHash == bytes32(0)) revert ZeroAddress();
-        if (_requests[requestHash].requestedAt != 0) revert InvalidValidator(); // reuse error for duplicate hash
+        if (requestHash == bytes32(0)) revert ZeroHash();
+        if (_requests[requestHash].requestedAt != 0) revert DuplicateRequest();
 
         address caller = _msgSender();
         address agentOwner;

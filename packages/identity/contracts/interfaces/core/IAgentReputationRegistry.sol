@@ -44,6 +44,9 @@ interface IAgentReputationRegistry is ICore {
     /// @notice Thrown when the agent owner tries to give feedback on their own agent
     error AgentOwnerCannotFeedback();
 
+    /// @notice Thrown when an approved operator tries to give feedback on an agent
+    error AgentOperatorCannotFeedback();
+
     /// @notice Thrown when the requested feedback does not exist
     error FeedbackNotFound();
 

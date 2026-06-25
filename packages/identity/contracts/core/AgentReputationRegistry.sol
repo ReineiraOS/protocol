@@ -75,6 +75,8 @@ contract AgentReputationRegistry is IAgentReputationRegistry, TestnetCoreBase {
             revert AgentNotFound();
         }
         if (caller == agentOwner) revert AgentOwnerCannotFeedback();
+        if (IERC721(address(identityRegistry)).isApprovedForAll(agentOwner, caller)) revert AgentOperatorCannotFeedback();
+        if (IERC721(address(identityRegistry)).getApproved(agentId) == caller) revert AgentOperatorCannotFeedback();
 
         bytes32 countKey = _feedbackKey(agentId, caller);
         uint64 index = ++_feedbackCount[countKey];

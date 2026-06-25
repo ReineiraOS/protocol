@@ -41,6 +41,12 @@ interface IAgentValidationRegistry is ICore {
     /// @notice Thrown when the response value exceeds 100
     error InvalidResponse();
 
+    /// @notice Thrown when the request hash is zero
+    error ZeroHash();
+
+    /// @notice Thrown when a request hash is already in use
+    error DuplicateRequest();
+
     /// @notice Creates a validation request for an agent
     /// @param validatorAddress The validator expected to respond
     /// @param agentId The agent to validate

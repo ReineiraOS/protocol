@@ -16,6 +16,7 @@ contract AgentReputationRegistryTest is Test {
     address client1 = makeAddr("client1");
     address client2 = makeAddr("client2");
     address responder = makeAddr("responder");
+    address operator = makeAddr("operator");
 
     function setUp() public {
         vm.startPrank(owner);
@@ -110,6 +111,28 @@ contract AgentReputationRegistryTest is Test {
 
         vm.prank(agentOwner);
         vm.expectRevert(IAgentReputationRegistry.AgentOwnerCannotFeedback.selector);
+        reputation.giveFeedback(agentId, 87, 0, "", "", "", "", bytes32(0));
+    }
+
+    function test_giveFeedback_revertsForApprovedForAllOperator() public {
+        uint256 agentId = _registerAgent(agentOwner);
+
+        vm.prank(agentOwner);
+        identity.setApprovalForAll(operator, true);
+
+        vm.prank(operator);
+        vm.expectRevert(IAgentReputationRegistry.AgentOperatorCannotFeedback.selector);
+        reputation.giveFeedback(agentId, 87, 0, "", "", "", "", bytes32(0));
+    }
+
+    function test_giveFeedback_revertsForApprovedOperator() public {
+        uint256 agentId = _registerAgent(agentOwner);
+
+        vm.prank(agentOwner);
+        identity.approve(operator, agentId);
+
+        vm.prank(operator);
+        vm.expectRevert(IAgentReputationRegistry.AgentOperatorCannotFeedback.selector);
         reputation.giveFeedback(agentId, 87, 0, "", "", "", "", bytes32(0));
     }
 

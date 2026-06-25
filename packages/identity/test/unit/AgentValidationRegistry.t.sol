@@ -111,7 +111,7 @@ contract AgentValidationRegistryTest is Test {
         uint256 agentId = _registerAgent(agentOwner);
 
         vm.prank(agentOwner);
-        vm.expectRevert(ICore.ZeroAddress.selector);
+        vm.expectRevert(IAgentValidationRegistry.ZeroHash.selector);
         validation.validationRequest(validator, agentId, "ipfs://request", bytes32(0));
     }
 
@@ -123,7 +123,7 @@ contract AgentValidationRegistryTest is Test {
         validation.validationRequest(validator, agentId, "ipfs://request", requestHash);
 
         vm.prank(agentOwner);
-        vm.expectRevert(IAgentValidationRegistry.InvalidValidator.selector);
+        vm.expectRevert(IAgentValidationRegistry.DuplicateRequest.selector);
         validation.validationRequest(validator, agentId, "ipfs://request2", requestHash);
     }
 
