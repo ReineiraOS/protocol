@@ -24,13 +24,13 @@ on testnet. Treat every line as subject to change.
 
 ## By package
 
-| Package                  | Status         | Notes                                                                                                                                                                                              |
-| ------------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@reineira-os/shared`    | ✅ Implemented | Base contracts, interfaces, and mocks shared across packages.                                                                                                                                      |
-| `@reineira-os/escrow`    | ✅ Implemented | Confidential FHE escrow + CCTP V2 cross-chain USDC. Core settlement paths covered by tests.                                                                                                        |
-| `@reineira-os/recourse`  | 🟡 Partial     | Pools, factory, registry, coverage manager, and router ship; underwriter policy and LP rewards do not (see below).                                                                                 |
-| `@reineira-os/operators` | 🟡 Partial     | Off-chain relayer infrastructure (NestJS). The on-chain operator staking stack (`orchestration`) was removed — settlement is permissionless (see §8 and `docs/adr/0001-drop-operator-staking.md`). |
-| `@reineira-os/sdk`       | ✅ Implemented | TypeScript client for the protocol.                                                                                                                                                                |
+| Package                  | Status         | Notes                                                                                                                                                 |
+| ------------------------ | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@reineira-os/shared`    | ✅ Implemented | Base contracts, interfaces, and mocks shared across packages.                                                                                         |
+| `@reineira-os/escrow`    | ✅ Implemented | Confidential FHE escrow + CCTP V2 cross-chain USDC. Core settlement paths covered by tests.                                                           |
+| `@reineira-os/recourse`  | 🟡 Partial     | Pools, factory, registry, coverage manager, and router ship; underwriter policy and LP rewards do not (see below).                                    |
+| `@reineira-os/operators` | 🟡 Partial     | Off-chain relayer infrastructure (NestJS). The on-chain operator staking stack (`orchestration`) was removed — settlement is permissionless (see §8). |
+| `@reineira-os/sdk`       | ✅ Implemented | TypeScript client for the protocol.                                                                                                                   |
 
 ## By whitepaper section
 
@@ -77,8 +77,7 @@ the whitepaper. They are disclosed deliberately.
    permissionless and attestation-gated, so any party can settle a bridged
    message; operators are reduced to relayers. The off-chain `operators` service
    rewrite to call `settle()` directly is the remaining follow-up. Restaking
-   (EigenLayer) is a future, opt-in recourse backstop, not built. See
-   `docs/adr/0001-drop-operator-staking.md`.
+   (EigenLayer) is a future, opt-in recourse backstop, not built.
 
 5. **No external audit.**
    No contract here has been audited. All core contracts are upgradeable on
