@@ -10,34 +10,26 @@ export interface CLIConfig {
   rpcUrl: string
   rpcUrlSource: string
   privateKey: string
-  registryAddress: string
-  taskExecutorAddress: string
+  escrowReceiverAddress: string
 }
 
-export function loadConfig(options: Record<string, string>, requireRegistry = true): CLIConfig {
+export function loadConfig(options: Record<string, string>, requireRpc = true): CLIConfig {
   const rpcUrl = options.rpc || process.env.RPC_URL
   const rpcUrlSource = options.rpcSource || process.env.RPC_URL_SOURCE
   const privateKey = options.privateKey || process.env.PRIVATE_KEY
-  const registryAddress =
-    options.registry ||
-    process.env.OPERATOR_REGISTRY_ADDRESS ||
-    CONTRACTS.ARBITRUM_SEPOLIA.OPERATOR_REGISTRY
-  const taskExecutorAddress =
-    options.executor ||
-    process.env.TASK_EXECUTOR_ADDRESS ||
-    CONTRACTS.ARBITRUM_SEPOLIA.TASK_EXECUTOR
+  const escrowReceiverAddress =
+    options.escrowReceiver ||
+    process.env.ESCROW_RECEIVER_ADDRESS ||
+    CONTRACTS.ARBITRUM_SEPOLIA.ESCROW_RECEIVER
 
   if (!privateKey) throw new Error('Missing --private-key or PRIVATE_KEY')
-  if (requireRegistry && !rpcUrl) throw new Error('Missing --rpc or RPC_URL')
-  if (requireRegistry && !registryAddress)
-    throw new Error('Missing --registry or OPERATOR_REGISTRY_ADDRESS')
+  if (requireRpc && !rpcUrl) throw new Error('Missing --rpc or RPC_URL')
 
   return {
     rpcUrl: rpcUrl || '',
     rpcUrlSource: rpcUrlSource || '',
     privateKey,
-    registryAddress: registryAddress || '',
-    taskExecutorAddress: taskExecutorAddress || '',
+    escrowReceiverAddress: escrowReceiverAddress || '',
   }
 }
 

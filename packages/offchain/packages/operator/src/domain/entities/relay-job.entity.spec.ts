@@ -83,26 +83,10 @@ describe('RelayJob', () => {
       expect(job.status).toBe('fetching_attestation')
     })
 
-    it('should transition from fetching_attestation to claiming', () => {
-      const job = createJob()
-      job.startFetchingAttestation()
-      job.startClaiming()
-      expect(job.status).toBe('claiming')
-    })
-
-    it('should transition from claiming to executing', () => {
-      const job = createJob()
-      job.startFetchingAttestation()
-      job.startClaiming()
-      job.startExecuting()
-      expect(job.status).toBe('executing')
-    })
-
     it('should transition from executing to completed', () => {
       const job = createJob()
       job.startFetchingAttestation()
-      job.startClaiming()
-      job.startExecuting()
+      job.startRelaying()
       job.complete(new TransactionHash(validTxHash), 1000n)
 
       expect(job.status).toBe('completed')
@@ -115,13 +99,6 @@ describe('RelayJob', () => {
       const job = createJob()
       job.startFetchingAttestation()
       expect(() => job.startFetchingAttestation()).toThrow()
-    })
-
-    it('should throw when claiming from invalid state', () => {
-      const job = createJob()
-      job.startFetchingAttestation()
-      job.startClaiming()
-      expect(() => job.startClaiming()).toThrow()
     })
 
     it('should transition from pending to executing via startRelaying', () => {
@@ -139,14 +116,8 @@ describe('RelayJob', () => {
 
     it('should throw when startRelaying from invalid state', () => {
       const job = createJob()
-      job.startFetchingAttestation()
-      job.startClaiming()
-      expect(() => job.startRelaying()).toThrow('Cannot start relaying from status: claiming')
-    })
-
-    it('should throw when executing from invalid state', () => {
-      const job = createJob()
-      expect(() => job.startExecuting()).toThrow()
+      job.startRelaying()
+      expect(() => job.startRelaying()).toThrow('Cannot start relaying from status: executing')
     })
 
     it('should throw when completing from invalid state', () => {
@@ -218,8 +189,7 @@ describe('RelayJob', () => {
       const job = createJob()
       job.startFetchingAttestation()
       job.setAttestation(validMessage, validAttestation)
-      job.startClaiming()
-      job.startExecuting()
+      job.startRelaying()
       job.complete(new TransactionHash(validTxHash), 1000n)
 
       const json = job.toJSON()
@@ -234,8 +204,7 @@ describe('RelayJob', () => {
       const job = createJob()
       job.startFetchingAttestation()
       job.setAttestation(validMessage, validAttestation)
-      job.startClaiming()
-      job.startExecuting()
+      job.startRelaying()
       job.fail('nonce too low')
       job.scheduleRetry(3, 1000)
 
@@ -278,11 +247,6 @@ describe('RelayJob', () => {
       expect(isRetryableError('Not authorized to execute')).toBe(false)
       expect(isRetryableError('not authorized')).toBe(false)
     })
-
-    it('should return false for insufficient stake', () => {
-      expect(isRetryableError('insufficient stake')).toBe(false)
-      expect(isRetryableError('Insufficient stake to claim')).toBe(false)
-    })
   })
 
   describe('scheduleRetry', () => {
@@ -290,8 +254,7 @@ describe('RelayJob', () => {
       const job = createJob()
       job.startFetchingAttestation()
       job.setAttestation(validMessage, validAttestation)
-      job.startClaiming()
-      job.startExecuting()
+      job.startRelaying()
       job.fail('nonce too low')
 
       const result = job.scheduleRetry(3, 1000)
@@ -308,8 +271,7 @@ describe('RelayJob', () => {
       const job = createJob()
       job.startFetchingAttestation()
       job.setAttestation(validMessage, validAttestation)
-      job.startClaiming()
-      job.startExecuting()
+      job.startRelaying()
       job.fail('error 1')
       job.scheduleRetry(3, 1000)
 
@@ -317,7 +279,6 @@ describe('RelayJob', () => {
 
       // Simulate retry attempt that fails again
       job.startRetry()
-      job.startExecuting()
       job.fail('error 2')
       job.scheduleRetry(3, 1000)
 
@@ -329,19 +290,16 @@ describe('RelayJob', () => {
       const job = createJob()
       job.startFetchingAttestation()
       job.setAttestation(validMessage, validAttestation)
-      job.startClaiming()
-      job.startExecuting()
+      job.startRelaying()
       job.fail('error')
 
       // Exhaust all retries
       job.scheduleRetry(2, 1000)
       job.startRetry()
-      job.startExecuting()
       job.fail('error')
 
       job.scheduleRetry(2, 1000)
       job.startRetry()
-      job.startExecuting()
       job.fail('error')
 
       const result = job.scheduleRetry(2, 1000)
@@ -354,8 +312,7 @@ describe('RelayJob', () => {
       const job = createJob()
       job.startFetchingAttestation()
       job.setAttestation(validMessage, validAttestation)
-      job.startClaiming()
-      job.startExecuting()
+      job.startRelaying()
       job.fail('error')
 
       const beforeSchedule = Date.now()
@@ -367,7 +324,6 @@ describe('RelayJob', () => {
       expect(firstRetryAt - beforeSchedule).toBeLessThanOrEqual(1100)
 
       job.startRetry()
-      job.startExecuting()
       job.fail('error')
 
       const beforeSecond = Date.now()
@@ -381,18 +337,17 @@ describe('RelayJob', () => {
   })
 
   describe('startRetry', () => {
-    it('should transition from pending_retry to claiming', () => {
+    it('should transition from pending_retry to executing', () => {
       const job = createJob()
       job.startFetchingAttestation()
       job.setAttestation(validMessage, validAttestation)
-      job.startClaiming()
-      job.startExecuting()
+      job.startRelaying()
       job.fail('error')
       job.scheduleRetry(3, 1000)
 
       job.startRetry()
 
-      expect(job.status).toBe('claiming')
+      expect(job.status).toBe('executing')
       expect(job.nextRetryAt).toBeUndefined()
     })
 
@@ -405,13 +360,11 @@ describe('RelayJob', () => {
       const job = createJob()
       job.startFetchingAttestation()
       job.setAttestation(validMessage, validAttestation)
-      job.startClaiming()
-      job.startExecuting()
+      job.startRelaying()
       job.fail('error')
       job.scheduleRetry(3, 1000)
 
       job.startRetry()
-      job.startExecuting()
       job.complete(new TransactionHash(validTxHash), 500n)
 
       expect(job.status).toBe('completed')
@@ -430,8 +383,7 @@ describe('RelayJob', () => {
       const job = createJob()
       job.startFetchingAttestation()
       job.setAttestation(validMessage, validAttestation)
-      job.startClaiming()
-      job.startExecuting()
+      job.startRelaying()
       job.fail('error')
       job.scheduleRetry(3, 10000) // 10 seconds in future
 
@@ -442,8 +394,7 @@ describe('RelayJob', () => {
       const job = createJob()
       job.startFetchingAttestation()
       job.setAttestation(validMessage, validAttestation)
-      job.startClaiming()
-      job.startExecuting()
+      job.startRelaying()
       job.fail('error')
       job.scheduleRetry(3, 1) // 1ms delay
 

@@ -180,14 +180,9 @@ export interface NetworkAddresses {
   policyRegistry: string;
   coverageManager: string;
   poolFactory: string;
-  operatorRegistry: string;
-  taskExecutor: string;
-  feeManager: string;
-  cctpHandler: string;
   usdc: string;
   cctpMessageTransmitter: string;
   trustedForwarder: string;
-  governanceToken: string;
 
   /** Plain (non-FHE) contract addresses — mainnet launch path */
   plainEscrow: string;
