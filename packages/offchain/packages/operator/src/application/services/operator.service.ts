@@ -294,10 +294,27 @@ export class OperatorService implements OnModuleInit, OnModuleDestroy {
         return
       }
 
-      job.startRetry()
-      this.logger.log(`Settling escrow (retry ${job.retryCount})...`)
+      // Route the retry the same way the initial handler did: outbound relays
+      // go to the destination MessageTransmitter; everything else settles into
+      // the escrow. (Using settle() for an outbound job would hit the wrong
+      // contract on the wrong chain.)
+      const isOutbound = job.taskType === TASK_CCTP_OUTBOUND_RELAY
+      if (isOutbound && !job.destinationChainId) {
+        job.fail('Missing destinationChainId for outbound relay retry')
+        return
+      }
 
-      const result = await this.messageRelay.settle(message, attestation)
+      job.startRetry()
+      this.logger.log(
+        isOutbound
+          ? `Relaying message to chain ${job.destinationChainId!.value} (retry ${job.retryCount})...`
+          : `Settling escrow (retry ${job.retryCount})...`,
+      )
+
+      const result =
+        isOutbound && job.destinationChainId
+          ? await this.messageRelay.relayMessage(job.destinationChainId.value, message, attestation)
+          : await this.messageRelay.settle(message, attestation)
 
       if (result.success && result.transactionHash) {
         job.complete(new TransactionHash(result.transactionHash))
