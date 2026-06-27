@@ -17,7 +17,6 @@ export const TESTNET_ADDRESSES: NetworkAddresses = {
   usdc: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
   cctpMessageTransmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
   trustedForwarder: "0x7ceA357B5AC0639F89F9e378a1f03Aa5005C0a25",
-  governanceToken: "0xb847e041bB3bC78C3CD951286AbCa28593739D12",
 
   // Plain (non-FHE) — mainnet launch path. 2026-06-15 Arb Sepolia redeploy
   // (verified on Arbiscan; supersedes the 2026-06-14 plain addresses).
