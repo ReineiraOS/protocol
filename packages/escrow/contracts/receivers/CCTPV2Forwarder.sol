@@ -8,7 +8,7 @@ pragma solidity ^0.8.24;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {TestnetCoreBase} from "@reineira-os/shared/contracts/common/TestnetCoreBase.sol";
-import {ICCTPV2Forwarder} from "../interfaces/ICCTPV2Forwarder.sol";
+import {ICCTPV2Forwarder} from "../interfaces/receivers/ICCTPV2Forwarder.sol";
 import {ICCTPV2MessageTransmitter} from "@reineira-os/shared/contracts/interfaces/external/ICCTPV2MessageTransmitter.sol";
 
 // TODO: TESTNET ONLY - Remove TestnetCoreBase inheritance for mainnet

@@ -3,10 +3,10 @@ pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {CCTPV2Forwarder} from "../../contracts/core/CCTPV2Forwarder.sol";
+import {CCTPV2Forwarder} from "../../contracts/receivers/CCTPV2Forwarder.sol";
 import {MockCCTPV2MessageTransmitter} from "../../contracts/mocks/MockCCTPV2MessageTransmitter.sol";
 import {MockUSDC} from "@reineira-os/shared/contracts/mocks/MockUSDC.sol";
-import {ICCTPV2Forwarder} from "../../contracts/interfaces/ICCTPV2Forwarder.sol";
+import {ICCTPV2Forwarder} from "../../contracts/interfaces/receivers/ICCTPV2Forwarder.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract CCTPV2ForwarderTest is Test {
