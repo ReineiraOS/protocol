@@ -24,7 +24,24 @@ const MessageTransmitterV2ABI = [
   },
 ]
 
+// Permissionless settlement entry point. Verifies the Circle attestation
+// on-chain and funds the confidential escrow atomically. Anyone may call it.
+const EscrowReceiverABI = [
+  {
+    name: 'settle',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'message', type: 'bytes' },
+      { name: 'attestation', type: 'bytes' },
+    ],
+    outputs: [],
+  },
+]
+
 const MESSAGE_TRANSMITTER_V2_TESTNET = '0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275'
+// Arbitrum Sepolia — chain the confidential escrow / receiver are deployed on.
+const DEFAULT_ESCROW_CHAIN_ID = 421614
 
 interface ChainConfig {
   provider: JsonRpcProvider
@@ -54,7 +71,7 @@ export class EthersMessageRelayAdapter implements MessageRelayPort {
       return existing
     }
 
-    const rpcUrl = this.rpcUrls[chainId.toString()]
+    const rpcUrl = this.rpcUrls[chainId.toString()] || this.configService.get<string>('RPC_URL')
     if (!rpcUrl) {
       throw new Error(`No RPC URL configured for chain ${chainId}`)
     }
@@ -72,6 +89,13 @@ export class EthersMessageRelayAdapter implements MessageRelayPort {
 
     this.logger.log(`Initialized message relay for chain ${chainId}`)
     return config
+  }
+
+  getOperatorAddress(): string {
+    if (!this.privateKey) {
+      return ''
+    }
+    return new Wallet(this.privateKey).address
   }
 
   async relayMessage(
@@ -107,6 +131,43 @@ export class EthersMessageRelayAdapter implements MessageRelayPort {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       this.logger.error(`Relay failed for chain ${destinationChainId}: ${errorMessage}`)
+
+      return {
+        success: false,
+        error: errorMessage,
+      }
+    }
+  }
+
+  async settle(message: string, attestation: string): Promise<MessageRelayResult> {
+    const escrowChainId = Number(
+      this.configService.get<string>('ESCROW_CHAIN_ID') ?? DEFAULT_ESCROW_CHAIN_ID,
+    )
+
+    try {
+      const receiverAddress = this.configService.get<string>('ESCROW_RECEIVER_ADDRESS')
+      if (!receiverAddress) {
+        throw new Error('Missing ESCROW_RECEIVER_ADDRESS configuration')
+      }
+
+      const { signer } = this.getChainConfig(escrowChainId)
+      const contract = new Contract(receiverAddress, EscrowReceiverABI, signer)
+
+      this.logger.log(`Settling escrow via ${receiverAddress} on chain ${escrowChainId}`)
+
+      const tx = (await contract.settle(message, attestation)) as ContractTransactionResponse
+      this.logger.log(`Settle transaction submitted: ${tx.hash}`)
+
+      const receipt = (await tx.wait()) as ContractTransactionReceipt
+      this.logger.log(`Settle transaction confirmed: ${receipt.hash}`)
+
+      return {
+        success: true,
+        transactionHash: receipt.hash,
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      this.logger.error(`Settle failed on chain ${escrowChainId}: ${errorMessage}`)
 
       return {
         success: false,

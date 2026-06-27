@@ -5,7 +5,7 @@ import { Subject } from 'rxjs'
 import { AppModule } from '../src/app.module'
 import { COORDINATOR_CLIENT_PORT, RelayEvent } from '../src/domain/ports/coordinator-client.port'
 import { ATTESTATION_PROVIDER_PORT } from '../src/domain/ports/attestation-provider.port'
-import { TASK_EXECUTOR_PORT } from '../src/domain/ports/task-executor.port'
+import { MESSAGE_RELAY_PORT } from '../src/domain/ports/message-relay.port'
 import { Attestation } from '../src/domain/entities/attestation.entity'
 
 interface StatusResponse {
@@ -58,20 +58,14 @@ describe('Operator (e2e)', () => {
     ),
   }
 
-  const taskExecutorMock = {
-    canExecuteTask: jest.fn().mockResolvedValue(true),
-    claimTask: jest.fn().mockResolvedValue(validTxHash),
-    executeTask: jest.fn().mockResolvedValue({
+  const messageRelayMock = {
+    relayMessage: jest.fn().mockResolvedValue({
       success: true,
       transactionHash: validTxHash,
-      operatorFee: 1000n,
     }),
-    getOperatorStatus: jest.fn().mockResolvedValue({
-      address: '0x1234567890123456789012345678901234567890',
-      isActive: true,
-      stake: 5000n,
-      unbondRequestTime: 0n,
-      slashed: false,
+    settle: jest.fn().mockResolvedValue({
+      success: true,
+      transactionHash: validTxHash,
     }),
     getOperatorAddress: jest.fn().mockReturnValue('0x1234567890123456789012345678901234567890'),
   }
@@ -87,8 +81,8 @@ describe('Operator (e2e)', () => {
       .useValue(coordinatorClientMock)
       .overrideProvider(ATTESTATION_PROVIDER_PORT)
       .useValue(attestationProviderMock)
-      .overrideProvider(TASK_EXECUTOR_PORT)
-      .useValue(taskExecutorMock)
+      .overrideProvider(MESSAGE_RELAY_PORT)
+      .useValue(messageRelayMock)
       .compile()
 
     app = moduleFixture.createNestApplication()
@@ -193,8 +187,8 @@ describe('Operator (e2e)', () => {
     })
 
     it('should handle failed relay execution', async () => {
-      // Mock failed execution
-      taskExecutorMock.executeTask.mockResolvedValueOnce({
+      // Mock failed settlement
+      messageRelayMock.settle.mockResolvedValueOnce({
         success: false,
         error: 'E2E test failure',
       })
