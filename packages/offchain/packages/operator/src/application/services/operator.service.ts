@@ -1,6 +1,5 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy, Inject } from '@nestjs/common'
 import { Subscription } from 'rxjs'
-import { keccak256, AbiCoder } from 'ethers'
 import { RelayJob, isRetryableError } from '../../domain/entities/relay-job.entity'
 import { TransactionHash } from '../../domain/value-objects/transaction-hash.value-object'
 import { ChainId } from '../../domain/value-objects/chain-id.value-object'
@@ -13,7 +12,6 @@ import {
   ATTESTATION_PROVIDER_PORT,
   AttestationProviderPort,
 } from '../../domain/ports/attestation-provider.port'
-import { TASK_EXECUTOR_PORT, TaskExecutorPort } from '../../domain/ports/task-executor.port'
 import { MESSAGE_RELAY_PORT, MessageRelayPort } from '../../domain/ports/message-relay.port'
 import { RELAY_CALLBACK_PORT, RelayCallbackPort } from '../../domain/ports/relay-callback.port'
 import { RelayJobRepository } from '../../infrastructure/repositories/relay-job.repository'
@@ -40,8 +38,6 @@ export class OperatorService implements OnModuleInit, OnModuleDestroy {
     private readonly coordinatorClient: CoordinatorClientPort,
     @Inject(ATTESTATION_PROVIDER_PORT)
     private readonly attestationProvider: AttestationProviderPort,
-    @Inject(TASK_EXECUTOR_PORT)
-    private readonly taskExecutor: TaskExecutorPort,
     @Inject(MESSAGE_RELAY_PORT)
     private readonly messageRelay: MessageRelayPort,
     @Inject(RELAY_CALLBACK_PORT)
@@ -67,19 +63,10 @@ export class OperatorService implements OnModuleInit, OnModuleDestroy {
     this.logger.log('Starting operator service...')
     this.isRunning = true
 
-    const status = await this.taskExecutor.getOperatorStatus()
-    if (status) {
-      this.logger.log(`Operator status:
-  Address: ${status.address}
-  Active: ${status.isActive}
-  Stake: ${status.stake}
-  Unbond Time: ${status.unbondRequestTime > 0n ? new Date(Number(status.unbondRequestTime) * 1000).toISOString() : 'N/A'}
-  Slashed: ${status.slashed}`)
-
-      if (!status.isActive) {
-        this.logger.warn('Operator is not active. Please register and stake tokens first.')
-      }
-    }
+    const operatorAddress = this.messageRelay.getOperatorAddress()
+    this.logger.log(
+      `Relayer running permissionlessly as ${operatorAddress || '(no wallet configured)'} — no registration or stake required`,
+    )
 
     this.subscription = this.coordinatorClient.connect().subscribe({
       next: (event) => void this.handleRelayEvent(event),
@@ -228,30 +215,16 @@ export class OperatorService implements OnModuleInit, OnModuleDestroy {
         job.setAttestation(message, attestation)
       }
 
-      const abiCoder = AbiCoder.defaultAbiCoder()
-      const payload = abiCoder.encode(['(bytes,bytes)'], [[message, attestation]])
+      // Permissionless settlement: anyone holding a valid attestation can call
+      // EscrowReceiver.settle(message, attestation). No claim window, no stake.
+      job.startRelaying()
+      this.logger.log(`Settling escrow (permissionless) for tx ${event.transactionHash}`)
 
-      const taskType = event.taskType || TASK_CCTP_RELAY
-      const taskHash = event.taskHash || keccak256(message)
-
-      job.startClaiming()
-      this.logger.log(`Claiming task ${taskHash} for exclusive execution window`)
-
-      const claimTxHash = await this.taskExecutor.claimTask(taskHash)
-      if (claimTxHash) {
-        this.logger.log(`Task claimed: ${claimTxHash}`)
-      }
-
-      job.startExecuting()
-      this.logger.log(`Executing task...`)
-
-      const result = await this.taskExecutor.executeTask(taskType, payload)
+      const result = await this.messageRelay.settle(message, attestation)
 
       if (result.success && result.transactionHash) {
-        job.complete(new TransactionHash(result.transactionHash), result.operatorFee)
-        this.logger.log(
-          `Task completed successfully: tx=${result.transactionHash}, fee=${result.operatorFee}`,
-        )
+        job.complete(new TransactionHash(result.transactionHash))
+        this.logger.log(`Settlement completed: tx=${result.transactionHash}`)
 
         const withdrawalId = event.metadata?.withdrawalId
         const callbackUrl = event.metadata?.callbackUrl
@@ -274,15 +247,15 @@ export class OperatorService implements OnModuleInit, OnModuleDestroy {
   private handleJobFailure(job: RelayJob, error: string): void {
     if (isRetryableError(error) && job.scheduleRetry(MAX_RETRIES, BASE_RETRY_DELAY_MS)) {
       this.logger.warn(
-        `Task failed with retryable error, scheduling retry ${job.retryCount}/${MAX_RETRIES} ` +
+        `Settlement failed with retryable error, scheduling retry ${job.retryCount}/${MAX_RETRIES} ` +
           `in ${Math.pow(2, job.retryCount - 1)}s: ${error}`,
       )
     } else {
       job.fail(error)
       if (!isRetryableError(error)) {
-        this.logger.error(`Task failed with non-retryable error: ${error}`)
+        this.logger.error(`Settlement failed with non-retryable error: ${error}`)
       } else {
-        this.logger.error(`Task failed after ${job.retryCount} retries: ${error}`)
+        this.logger.error(`Settlement failed after ${job.retryCount} retries: ${error}`)
       }
     }
   }
@@ -322,25 +295,14 @@ export class OperatorService implements OnModuleInit, OnModuleDestroy {
       }
 
       job.startRetry()
-
-      const abiCoder = AbiCoder.defaultAbiCoder()
-      const payload = abiCoder.encode(['(bytes,bytes)'], [[message, attestation]])
-      const taskHash = keccak256(message)
-
-      this.logger.log(`Claiming task ${taskHash} for retry`)
-      const claimTxHash = await this.taskExecutor.claimTask(taskHash)
-      if (claimTxHash) {
-        this.logger.log(`Task claimed: ${claimTxHash}`)
-      }
-
       job.startExecuting()
-      this.logger.log(`Executing task (retry ${job.retryCount})...`)
+      this.logger.log(`Settling escrow (retry ${job.retryCount})...`)
 
-      const result = await this.taskExecutor.executeTask(TASK_CCTP_RELAY, payload)
+      const result = await this.messageRelay.settle(message, attestation)
 
       if (result.success && result.transactionHash) {
-        job.complete(new TransactionHash(result.transactionHash), result.operatorFee)
-        this.logger.log(`Retry succeeded: tx=${result.transactionHash}, fee=${result.operatorFee}`)
+        job.complete(new TransactionHash(result.transactionHash))
+        this.logger.log(`Retry succeeded: tx=${result.transactionHash}`)
       } else {
         this.handleJobFailure(job, result.error || 'Unknown error')
       }
@@ -354,7 +316,7 @@ export class OperatorService implements OnModuleInit, OnModuleDestroy {
     return {
       isRunning: this.isRunning,
       isConnected: this.coordinatorClient.isConnected(),
-      operatorAddress: this.taskExecutor.getOperatorAddress(),
+      operatorAddress: this.messageRelay.getOperatorAddress(),
     }
   }
 
