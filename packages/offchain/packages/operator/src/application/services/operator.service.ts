@@ -295,7 +295,6 @@ export class OperatorService implements OnModuleInit, OnModuleDestroy {
       }
 
       job.startRetry()
-      job.startExecuting()
       this.logger.log(`Settling escrow (retry ${job.retryCount})...`)
 
       const result = await this.messageRelay.settle(message, attestation)
@@ -326,7 +325,6 @@ export class OperatorService implements OnModuleInit, OnModuleDestroy {
       totalJobs: this.jobRepository.count(),
       pending: counts['pending'] || 0,
       fetchingAttestation: counts['fetching_attestation'] || 0,
-      claiming: counts['claiming'] || 0,
       executing: counts['executing'] || 0,
       completed: counts['completed'] || 0,
       failed: counts['failed'] || 0,

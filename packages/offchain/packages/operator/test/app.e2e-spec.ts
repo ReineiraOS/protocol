@@ -18,7 +18,6 @@ interface JobStatusResponse {
   totalJobs: number
   pending: number
   fetchingAttestation: number
-  claiming: number
   executing: number
   completed: number
   failed: number
