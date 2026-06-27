@@ -9,8 +9,6 @@ Confidential escrow settlement protocol using FHE (Fully Homomorphic Encryption)
 
 > **Note:** The escrow settles in any ERC-7984 / FHERC20 confidential token configured at deployment — it does not bundle a specific token implementation.
 
-> **Note:** Relayer network contracts have been moved to the [@reineira-os/orchestration](../orchestration) repository.
-
 All core contracts use UUPS upgradeable proxy pattern for testnet iteration.
 
 ## Prerequisites
@@ -126,10 +124,6 @@ test/
   fixtures/       # Test fixtures
 deployments/      # Deployed contract addresses per network
 ```
-
-## Related Repositories
-
-- [@reineira-os/orchestration](../orchestration) - Relayer network orchestration
 
 ## License
 

@@ -81,9 +81,6 @@ jobs:
       - name: Compile shared
         run: cd packages/shared && forge build
 
-      - name: Compile & test orchestration
-        run: cd packages/orchestration && forge build && forge test -vv
-
       - name: Compile & test escrow
         run: cd packages/escrow && forge build && forge test -vv
 

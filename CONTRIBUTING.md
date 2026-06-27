@@ -14,7 +14,7 @@ contribution and grant Reineira Labs Limited the license described in the CLA.
 
 This repository is multi-licensed by layer — see [LICENSE](LICENSE) and [NOTICE](NOTICE):
 
-- **Core protocol** (`packages/escrow`, `packages/recourse`, `packages/orchestration`) — Functional Source License 1.1 (FSL-1.1-ALv2; non-compete, converts to Apache-2.0 after two years).
+- **Core protocol** (`packages/escrow`, `packages/recourse`) — Functional Source License 1.1 (FSL-1.1-ALv2; non-compete, converts to Apache-2.0 after two years).
 - **Shared interfaces / base contracts** (`packages/shared`) and **operator services** (`packages/offchain`) — Apache License 2.0.
 - **SDK and other builder-facing edges** (`packages/sdk`, …) — MIT.
 

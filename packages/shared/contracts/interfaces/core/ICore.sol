@@ -5,7 +5,7 @@ pragma solidity ^0.8.24;
 /// @title ICore — Base interface for all upgradeable protocol contracts
 /// @notice Defines the shared `CoreInitialized` event and the common errors that every
 ///         protocol contract emits on initialization. All concrete contract interfaces
-///         (escrow, recourse, orchestration) inherit this interface to advertise the
+///         (escrow, recourse) inherit this interface to advertise the
 ///         shared lifecycle signal and error surface.
 /// @dev Implementations emit `CoreInitialized(owner)` from their `initialize` function
 ///      (named distinctly from OpenZeppelin's `Initialized(uint8)` to avoid ABI conflict).
