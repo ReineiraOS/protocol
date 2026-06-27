@@ -73,7 +73,7 @@ export const relayCommand = new Command('relay')
         console.log(`Block:           ${receipt.blockNumber}`)
         console.log(`Gas Used:        ${receipt.gasUsed.toString()}`)
 
-        // EscrowSettled(uint256 escrowId, address settler, uint256 usdcAmount, uint256 fundedAmount)
+        // EscrowSettled(uint256 escrowId, address relayer, uint256 usdcAmount, uint256 escrowAmount)
         const settledEvent = receipt.logs.find(
           (l): l is EventLog => l instanceof EventLog && l.fragment?.name === 'EscrowSettled',
         )

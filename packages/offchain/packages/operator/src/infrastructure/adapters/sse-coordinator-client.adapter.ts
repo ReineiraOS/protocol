@@ -1,8 +1,20 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Subject, Observable } from 'rxjs'
+import { Wallet } from 'ethers'
 import EventSource from 'eventsource'
 import { CoordinatorClientPort, RelayEvent } from '../../domain/ports/coordinator-client.port'
+
+/** Derive the relayer's address from its private key (permissionless: the
+ *  relayer's identity is simply its wallet). Returns '' if no/invalid key. */
+function addressFromPrivateKey(privateKey: string): string {
+  if (!privateKey) return ''
+  try {
+    return new Wallet(privateKey).address
+  } catch {
+    return ''
+  }
+}
 
 @Injectable()
 export class SseCoordinatorClientAdapter implements CoordinatorClientPort, OnModuleDestroy {
@@ -17,7 +29,12 @@ export class SseCoordinatorClientAdapter implements CoordinatorClientPort, OnMod
 
   constructor(configService: ConfigService) {
     this.coordinatorUrl = configService.get<string>('COORDINATOR_URL', 'http://localhost:3001')
-    this.operatorAddress = configService.get<string>('OPERATOR_ADDRESS', '')
+    // No registration: the SSE subscription is keyed by the relayer's wallet
+    // address. OPERATOR_ADDRESS is an optional override; otherwise derive it
+    // from PRIVATE_KEY.
+    this.operatorAddress =
+      configService.get<string>('OPERATOR_ADDRESS', '') ||
+      addressFromPrivateKey(configService.get<string>('PRIVATE_KEY', ''))
   }
 
   connect(): Observable<RelayEvent> {

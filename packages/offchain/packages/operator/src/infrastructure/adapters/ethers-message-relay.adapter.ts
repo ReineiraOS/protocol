@@ -63,6 +63,16 @@ export class EthersMessageRelayAdapter implements MessageRelayPort {
     } catch {
       this.rpcUrls = {}
     }
+
+    // Fail loud at startup rather than silently at the first settlement.
+    if (!this.privateKey) {
+      this.logger.warn('PRIVATE_KEY is not set — settlement transactions cannot be signed')
+    }
+    if (!this.configService.get<string>('ESCROW_RECEIVER_ADDRESS')) {
+      this.logger.warn(
+        'ESCROW_RECEIVER_ADDRESS is not set — escrow settlement (settle) will fail until configured',
+      )
+    }
   }
 
   private getChainConfig(chainId: number): ChainConfig {
@@ -95,7 +105,14 @@ export class EthersMessageRelayAdapter implements MessageRelayPort {
     if (!this.privateKey) {
       return ''
     }
-    return new Wallet(this.privateKey).address
+    try {
+      return new Wallet(this.privateKey).address
+    } catch {
+      // Malformed PRIVATE_KEY — surface it as a warning instead of crashing
+      // service startup with an opaque ethers error.
+      this.logger.warn('PRIVATE_KEY is not a valid private key')
+      return ''
+    }
   }
 
   async relayMessage(
@@ -121,12 +138,13 @@ export class EthersMessageRelayAdapter implements MessageRelayPort {
 
       this.logger.log(`Relay transaction submitted: ${tx.hash}`)
 
-      const receipt = (await tx.wait()) as ContractTransactionReceipt
-      this.logger.log(`Relay transaction confirmed: ${receipt.hash}`)
+      const receipt = (await tx.wait()) as ContractTransactionReceipt | null
+      const confirmedHash = receipt?.hash ?? tx.hash
+      this.logger.log(`Relay transaction confirmed: ${confirmedHash}`)
 
       return {
         success: true,
-        transactionHash: receipt.hash,
+        transactionHash: confirmedHash,
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
@@ -140,9 +158,8 @@ export class EthersMessageRelayAdapter implements MessageRelayPort {
   }
 
   async settle(message: string, attestation: string): Promise<MessageRelayResult> {
-    const escrowChainId = Number(
-      this.configService.get<string>('ESCROW_CHAIN_ID') ?? DEFAULT_ESCROW_CHAIN_ID,
-    )
+    const parsedChainId = Number(this.configService.get<string>('ESCROW_CHAIN_ID'))
+    const escrowChainId = Number.isNaN(parsedChainId) ? DEFAULT_ESCROW_CHAIN_ID : parsedChainId
 
     try {
       const receiverAddress = this.configService.get<string>('ESCROW_RECEIVER_ADDRESS')
@@ -158,12 +175,13 @@ export class EthersMessageRelayAdapter implements MessageRelayPort {
       const tx = (await contract.settle(message, attestation)) as ContractTransactionResponse
       this.logger.log(`Settle transaction submitted: ${tx.hash}`)
 
-      const receipt = (await tx.wait()) as ContractTransactionReceipt
-      this.logger.log(`Settle transaction confirmed: ${receipt.hash}`)
+      const receipt = (await tx.wait()) as ContractTransactionReceipt | null
+      const confirmedHash = receipt?.hash ?? tx.hash
+      this.logger.log(`Settle transaction confirmed: ${confirmedHash}`)
 
       return {
         success: true,
-        transactionHash: receipt.hash,
+        transactionHash: confirmedHash,
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
