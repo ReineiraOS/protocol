@@ -13,12 +13,6 @@ export const TESTNET_ADDRESSES: NetworkAddresses = {
   coverageManager: "0x636084Da863569bd90c94C1C7a5180eBF8F88AAd",
   poolFactory: "0x278c43aB5B8726EbdFD6E7352c128aDA48269442",
 
-  // Orchestration
-  operatorRegistry: "0x5Ac3a3750e0a9f7d4ddBC0B52c3f13E8f927FB59",
-  taskExecutor: "0x4D239335f39E585Bb75631C4683538EFC496a5EB",
-  feeManager: "0x639f5cB99DcF9681A0461A1452c3845811d3308A",
-  cctpHandler: "0x575186a64B9FC49E135A2440DC4A1395edc0F3aD",
-
   // External
   usdc: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
   cctpMessageTransmitter: "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
@@ -68,7 +62,3 @@ export const CCTP_ARBITRUM_SEPOLIA_DOMAIN = 3;
 export const CHAIN_ID_ETHEREUM_SEPOLIA = 11155111;
 export const CHAIN_ID_BASE_SEPOLIA = 84532;
 export const CHAIN_ID_ARBITRUM_SEPOLIA = 421614;
-
-// CCTP task type hash (keccak256 of the relay task)
-export const CCTP_RELAY_TASK_TYPE =
-  "0x7f590974bc33c0198dbfa46b88b7e202d51129d9e12c8181dc58fc3f234def67";

@@ -1,8 +1,3 @@
-export const TIMING = {
-  EXCLUSIVE_WINDOW_MS: 60_000,
-  PERMISSIONLESS_DELAY_MS: 600_000,
-} as const
-
 /**
  * Task type constants - keccak256 hashes of task type strings
  */
@@ -14,16 +9,14 @@ export const TASK_TYPES = {
 } as const
 
 /**
- * Contract addresses for Arbitrum Sepolia
- * Updated from the orchestration package deployments
+ * Contract addresses for Arbitrum Sepolia.
+ *
+ * The on-chain operator stack (OperatorRegistry / TaskExecutor / FeeManager /
+ * CCTPHandler) was removed — settlement is permissionless via the escrow
+ * receiver's `settle(message, attestation)` entry point.
  */
 export const CONTRACTS = {
   ARBITRUM_SEPOLIA: {
-    OPERATOR_REGISTRY: '0x5Ac3a3750e0a9f7d4ddBC0B52c3f13E8f927FB59',
-    TASK_EXECUTOR: '0x4D239335f39E585Bb75631C4683538EFC496a5EB',
-    FEE_MANAGER: '0x639f5cB99DcF9681A0461A1452c3845811d3308A',
-    CCTP_HANDLER: '0x575186a64B9FC49E135A2440DC4A1395edc0F3aD',
-    GOV_TOKEN: '0xb847e041bB3bC78C3CD951286AbCa28593739D12',
     ESCROW: '0xF50A9CF008a79CFCA39aa9a345aa06e8D12727E2',
     ESCROW_RECEIVER: '0xe0E6CC9Ee62Fa36b96eC4F50CDc462Fd14aa0fD3',
   },
