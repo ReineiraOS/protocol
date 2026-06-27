@@ -176,8 +176,7 @@ npm run build -w @reineira-os/operator-cli
 
 ## Related Repositories
 
-- [@reineira-os/orchestration](../orchestration) — Operator registry, task executor, and fee management contracts
-- [@reineira-os/escrow](../escrow) — FHE-encrypted confidential escrow contracts
+- [@reineira-os/escrow](../escrow) — FHE-encrypted confidential escrow contracts (incl. `CCTPV2EscrowReceiver`)
 
 ## License
 
