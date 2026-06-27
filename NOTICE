@@ -4,7 +4,7 @@ Copyright (c) 2026 Reineira Labs Limited
 This repository contains software licensed under multiple licenses.
 See the LICENSE file in the root directory for details.
 
-CORE PROTOCOL (packages/escrow, recourse, orchestration)
+CORE PROTOCOL (packages/escrow, recourse)
 Licensed under the Functional Source License 1.1, ALv2 Future License
 (FSL-1.1-ALv2). You may use this software for any purpose except a Competing
 Use (as defined in the license). Each version converts to the Apache License

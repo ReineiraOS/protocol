@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: FSL-1.1-ALv2
 // Copyright (c) 2026 Reineira Labs Limited All rights reserved.
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.25;
 
 // TODO: TESTNET ONLY - Remove upgradeable pattern for mainnet deployment
 // For mainnet, replace TestnetCoreBase with non-upgradeable ReentrancyGuard and remove initializer.

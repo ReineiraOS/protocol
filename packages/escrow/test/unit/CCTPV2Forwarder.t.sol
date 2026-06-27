@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: FSL-1.1-ALv2
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
