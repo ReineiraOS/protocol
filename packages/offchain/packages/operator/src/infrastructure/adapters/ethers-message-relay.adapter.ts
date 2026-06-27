@@ -10,6 +10,7 @@ import {
   ContractTransactionReceipt,
 } from 'ethers'
 import { MessageRelayPort, MessageRelayResult } from '../../domain/ports/message-relay.port'
+import { addressFromPrivateKey } from './wallet.util'
 
 const MessageTransmitterV2ABI = [
   {
@@ -54,9 +55,15 @@ export class EthersMessageRelayAdapter implements MessageRelayPort {
   private readonly chains = new Map<number, ChainConfig>()
   private readonly rpcUrls: Record<string, string>
   private readonly privateKey: string
+  private readonly operatorAddress: string
+  private readonly escrowChainId: number
+  private readonly escrowReceiverAddress: string
+  private readonly transmitterAddress: string
 
   constructor(private readonly configService: ConfigService) {
     this.privateKey = configService.get<string>('PRIVATE_KEY', '')
+    this.operatorAddress = addressFromPrivateKey(this.privateKey)
+
     const rpcUrlsJson = configService.get<string>('DESTINATION_RPC_URLS', '{}')
     try {
       this.rpcUrls = JSON.parse(rpcUrlsJson) as Record<string, string>
@@ -64,11 +71,29 @@ export class EthersMessageRelayAdapter implements MessageRelayPort {
       this.rpcUrls = {}
     }
 
+    const parsedChainId = Number(configService.get<string>('ESCROW_CHAIN_ID'))
+    this.escrowChainId = Number.isNaN(parsedChainId) ? DEFAULT_ESCROW_CHAIN_ID : parsedChainId
+    this.escrowReceiverAddress = configService.get<string>('ESCROW_RECEIVER_ADDRESS', '')
+    this.transmitterAddress =
+      configService.get<string>('MESSAGE_TRANSMITTER_V2_ADDRESS') || MESSAGE_TRANSMITTER_V2_TESTNET
+
+    // RPC_URL is the escrow chain's RPC. Seed it as that chain's entry so settle()
+    // works without DESTINATION_RPC_URLS — but DO NOT let it become a blanket
+    // fallback, or an outbound relayMessage() to an unconfigured chain would be
+    // silently routed to the escrow chain.
+    const escrowRpcUrl = configService.get<string>('RPC_URL')
+    const escrowKey = this.escrowChainId.toString()
+    if (escrowRpcUrl && !this.rpcUrls[escrowKey]) {
+      this.rpcUrls[escrowKey] = escrowRpcUrl
+    }
+
     // Fail loud at startup rather than silently at the first settlement.
     if (!this.privateKey) {
       this.logger.warn('PRIVATE_KEY is not set — settlement transactions cannot be signed')
+    } else if (!this.operatorAddress) {
+      this.logger.warn('PRIVATE_KEY is not a valid private key')
     }
-    if (!this.configService.get<string>('ESCROW_RECEIVER_ADDRESS')) {
+    if (!this.escrowReceiverAddress) {
       this.logger.warn(
         'ESCROW_RECEIVER_ADDRESS is not set — escrow settlement (settle) will fail until configured',
       )
@@ -81,7 +106,7 @@ export class EthersMessageRelayAdapter implements MessageRelayPort {
       return existing
     }
 
-    const rpcUrl = this.rpcUrls[chainId.toString()] || this.configService.get<string>('RPC_URL')
+    const rpcUrl = this.rpcUrls[chainId.toString()]
     if (!rpcUrl) {
       throw new Error(`No RPC URL configured for chain ${chainId}`)
     }
@@ -102,17 +127,7 @@ export class EthersMessageRelayAdapter implements MessageRelayPort {
   }
 
   getOperatorAddress(): string {
-    if (!this.privateKey) {
-      return ''
-    }
-    try {
-      return new Wallet(this.privateKey).address
-    } catch {
-      // Malformed PRIVATE_KEY — surface it as a warning instead of crashing
-      // service startup with an opaque ethers error.
-      this.logger.warn('PRIVATE_KEY is not a valid private key')
-      return ''
-    }
+    return this.operatorAddress
   }
 
   async relayMessage(
@@ -123,11 +138,7 @@ export class EthersMessageRelayAdapter implements MessageRelayPort {
     try {
       const { signer } = this.getChainConfig(destinationChainId)
 
-      const transmitterAddress =
-        this.configService.get<string>('MESSAGE_TRANSMITTER_V2_ADDRESS') ||
-        MESSAGE_TRANSMITTER_V2_TESTNET
-
-      const contract = new Contract(transmitterAddress, MessageTransmitterV2ABI, signer)
+      const contract = new Contract(this.transmitterAddress, MessageTransmitterV2ABI, signer)
 
       this.logger.log(`Relaying message to chain ${destinationChainId}`)
 
@@ -158,19 +169,17 @@ export class EthersMessageRelayAdapter implements MessageRelayPort {
   }
 
   async settle(message: string, attestation: string): Promise<MessageRelayResult> {
-    const parsedChainId = Number(this.configService.get<string>('ESCROW_CHAIN_ID'))
-    const escrowChainId = Number.isNaN(parsedChainId) ? DEFAULT_ESCROW_CHAIN_ID : parsedChainId
-
     try {
-      const receiverAddress = this.configService.get<string>('ESCROW_RECEIVER_ADDRESS')
-      if (!receiverAddress) {
+      if (!this.escrowReceiverAddress) {
         throw new Error('Missing ESCROW_RECEIVER_ADDRESS configuration')
       }
 
-      const { signer } = this.getChainConfig(escrowChainId)
-      const contract = new Contract(receiverAddress, EscrowReceiverABI, signer)
+      const { signer } = this.getChainConfig(this.escrowChainId)
+      const contract = new Contract(this.escrowReceiverAddress, EscrowReceiverABI, signer)
 
-      this.logger.log(`Settling escrow via ${receiverAddress} on chain ${escrowChainId}`)
+      this.logger.log(
+        `Settling escrow via ${this.escrowReceiverAddress} on chain ${this.escrowChainId}`,
+      )
 
       const tx = (await contract.settle(message, attestation)) as ContractTransactionResponse
       this.logger.log(`Settle transaction submitted: ${tx.hash}`)
@@ -185,7 +194,7 @@ export class EthersMessageRelayAdapter implements MessageRelayPort {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
-      this.logger.error(`Settle failed on chain ${escrowChainId}: ${errorMessage}`)
+      this.logger.error(`Settle failed on chain ${this.escrowChainId}: ${errorMessage}`)
 
       return {
         success: false,
