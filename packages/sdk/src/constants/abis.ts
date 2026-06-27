@@ -119,23 +119,6 @@ export const POLICY_REGISTRY_ABI = [
   "event PolicyRegistered(uint256 indexed policyId, address indexed policy, address indexed creator)",
 ] as const;
 
-export const OPERATOR_REGISTRY_ABI = [
-  "function registerOperator(uint256 amount)",
-  "function claimTask(bytes32 taskHash)",
-  "function isOperatorActive(address operator) view returns (bool)",
-  "function activeOperatorCount() view returns (uint256)",
-  "function getActiveOperators() view returns (address[])",
-  "event OperatorRegistered(address indexed operator, uint256 stake)",
-  "event TaskClaimed(bytes32 indexed taskHash, address indexed operator)",
-  "event TaskExecuted(bytes32 indexed taskHash, address indexed operator)",
-] as const;
-
-export const TASK_EXECUTOR_ABI = [
-  "function executeTask(bytes32 taskType, bytes payload) returns (bytes result)",
-  "function getHandler(bytes32 taskType) view returns (address)",
-  "event TaskExecuted(bytes32 indexed taskType, bytes32 indexed taskHash, address indexed operator, uint256 operatorFee)",
-] as const;
-
 export const CONDITION_RESOLVER_ABI = [
   "function isConditionMet(uint256 escrowId) view returns (bool)",
 ] as const;
