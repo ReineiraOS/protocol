@@ -9,8 +9,13 @@ libs = ["node_modules", "../../node_modules"]
 remappings = [
     "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
     "@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/",
+    "@fhenixprotocol/cofhe-contracts/=../../node_modules/@fhenixprotocol/cofhe-contracts/",
+    "@cofhe/mock-contracts/=../../node_modules/@cofhe/mock-contracts/",
+    "@cofhe/foundry-plugin/=../../node_modules/@cofhe/foundry-plugin/",
+    "fhenix-confidential-contracts/=../../node_modules/fhenix-confidential-contracts/",
     "@reineira-os/shared/=node_modules/@reineira-os/shared/",
     "forge-std/=../../node_modules/forge-std/src/",
+    "hardhat/=../../node_modules/forge-std/src/",
 ]
 
 solc_version = "0.8.25"
