@@ -119,7 +119,7 @@ npm run test:cov
 ## Future Work
 
 - **Webhook Integration**: Replace HTTP submission with QuickNode webhooks
-- **Reputation Selection**: Use `OperatorRegistry.selectOperator()` contract method
+- **Relayer dedup**: Optional assignment/dedup so multiple permissionless relayers don't race the same settlement
 - **Persistent Storage**: Replace in-memory repository with PostgreSQL/Redis
 - **Message Acknowledgment**: Add retry mechanism for failed deliveries
 

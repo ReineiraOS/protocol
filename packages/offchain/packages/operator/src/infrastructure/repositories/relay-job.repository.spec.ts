@@ -96,8 +96,7 @@ describe('RelayJobRepository', () => {
     it('should find completed jobs', () => {
       const job = createJob()
       job.startFetchingAttestation()
-      job.startClaiming()
-      job.startExecuting()
+      job.startRelaying()
       job.complete(new TransactionHash(validTxHash))
 
       repository.save(job)
@@ -165,8 +164,7 @@ describe('RelayJobRepository', () => {
       job2.fail('error')
       const job3 = createJob()
       job3.startFetchingAttestation()
-      job3.startClaiming()
-      job3.startExecuting()
+      job3.startRelaying()
       job3.complete(new TransactionHash(validTxHash))
 
       repository.save(job1)
@@ -183,8 +181,7 @@ describe('RelayJobRepository', () => {
       const job = createJob()
       job.startFetchingAttestation()
       job.setAttestation(validMessage, validAttestation)
-      job.startClaiming()
-      job.startExecuting()
+      job.startRelaying()
       job.fail('nonce error')
       job.scheduleRetry(3, 1000)
 
@@ -200,8 +197,7 @@ describe('RelayJobRepository', () => {
       const job1 = createJob()
       job1.startFetchingAttestation()
       job1.setAttestation(validMessage, validAttestation)
-      job1.startClaiming()
-      job1.startExecuting()
+      job1.startRelaying()
       job1.fail('error')
       job1.scheduleRetry(3, 1000)
 
@@ -230,8 +226,7 @@ describe('RelayJobRepository', () => {
       const job = createJob()
       job.startFetchingAttestation()
       job.setAttestation(validMessage, validAttestation)
-      job.startClaiming()
-      job.startExecuting()
+      job.startRelaying()
       job.fail('error')
       job.scheduleRetry(3, 1) // 1ms delay
 
@@ -249,8 +244,7 @@ describe('RelayJobRepository', () => {
       const job = createJob()
       job.startFetchingAttestation()
       job.setAttestation(validMessage, validAttestation)
-      job.startClaiming()
-      job.startExecuting()
+      job.startRelaying()
       job.fail('error')
       job.scheduleRetry(3, 10000) // 10 seconds in future
 
@@ -279,8 +273,7 @@ describe('RelayJobRepository', () => {
       const job2 = createJob()
       job2.startFetchingAttestation()
       job2.setAttestation(validMessage, validAttestation)
-      job2.startClaiming()
-      job2.startExecuting()
+      job2.startRelaying()
       job2.fail('error')
       job2.scheduleRetry(3, 1000) // pending_retry - should NOT be included
 
@@ -298,8 +291,7 @@ describe('RelayJobRepository', () => {
 
       const job2 = createJob()
       job2.startFetchingAttestation()
-      job2.startClaiming()
-      job2.startExecuting()
+      job2.startRelaying()
       job2.complete(new TransactionHash(validTxHash))
 
       repository.save(job1)

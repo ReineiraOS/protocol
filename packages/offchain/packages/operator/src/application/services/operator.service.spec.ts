@@ -4,7 +4,6 @@ import { Attestation } from '../../domain/entities/attestation.entity'
 import { RelayJobRepository } from '../../infrastructure/repositories/relay-job.repository'
 import { CoordinatorClientPort, RelayEvent } from '../../domain/ports/coordinator-client.port'
 import { AttestationProviderPort } from '../../domain/ports/attestation-provider.port'
-import { TaskExecutorPort, TaskResult } from '../../domain/ports/task-executor.port'
 import { MessageRelayPort, MessageRelayResult } from '../../domain/ports/message-relay.port'
 import { RelayCallbackPort } from '../../domain/ports/relay-callback.port'
 import { OperatorService } from './operator.service'
@@ -13,6 +12,7 @@ const VALID_TX_HASH = '0x' + 'a'.repeat(64)
 const RESULT_TX_HASH = '0x' + 'b'.repeat(64)
 const VALID_MESSAGE = '0x' + 'c'.repeat(64)
 const VALID_ATTESTATION = '0x' + 'd'.repeat(64)
+const OPERATOR_ADDRESS = '0x' + '1'.repeat(40)
 
 function createMockEvent(overrides: Partial<RelayEvent> = {}): RelayEvent {
   return {
@@ -53,7 +53,6 @@ describe('OperatorService', () => {
   let jobRepository: RelayJobRepository
   let mockCoordinatorClient: jest.Mocked<CoordinatorClientPort>
   let mockAttestationProvider: jest.Mocked<AttestationProviderPort>
-  let mockTaskExecutor: jest.Mocked<TaskExecutorPort>
   let mockMessageRelay: jest.Mocked<MessageRelayPort>
   let mockRelayCallback: jest.Mocked<RelayCallbackPort>
 
@@ -72,29 +71,16 @@ describe('OperatorService', () => {
       waitForAttestation: jest.fn().mockResolvedValue(createMockAttestation()),
     }
 
-    mockTaskExecutor = {
-      canExecuteTask: jest.fn().mockResolvedValue(true),
-      claimTask: jest.fn().mockResolvedValue(RESULT_TX_HASH),
-      executeTask: jest.fn().mockResolvedValue({
-        success: true,
-        transactionHash: RESULT_TX_HASH,
-        operatorFee: 100n,
-      } as TaskResult),
-      getOperatorStatus: jest.fn().mockResolvedValue({
-        address: '0x' + '1'.repeat(40),
-        isActive: true,
-        stake: 5000n,
-        unbondRequestTime: 0n,
-        slashed: false,
-      }),
-      getOperatorAddress: jest.fn().mockReturnValue('0x' + '1'.repeat(40)),
-    }
-
     mockMessageRelay = {
       relayMessage: jest.fn().mockResolvedValue({
         success: true,
         transactionHash: RESULT_TX_HASH,
       } as MessageRelayResult),
+      settle: jest.fn().mockResolvedValue({
+        success: true,
+        transactionHash: RESULT_TX_HASH,
+      } as MessageRelayResult),
+      getOperatorAddress: jest.fn().mockReturnValue(OPERATOR_ADDRESS),
     }
 
     mockRelayCallback = {
@@ -104,7 +90,6 @@ describe('OperatorService', () => {
     service = new OperatorService(
       mockCoordinatorClient,
       mockAttestationProvider,
-      mockTaskExecutor,
       mockMessageRelay,
       mockRelayCallback,
       jobRepository,
@@ -130,7 +115,7 @@ describe('OperatorService', () => {
         VALID_MESSAGE,
         VALID_ATTESTATION,
       )
-      expect(mockTaskExecutor.executeTask).not.toHaveBeenCalled()
+      expect(mockMessageRelay.settle).not.toHaveBeenCalled()
     })
 
     it('should send callback notification on success', async () => {
@@ -228,7 +213,7 @@ describe('OperatorService', () => {
   })
 
   describe('inbound relay', () => {
-    it('should use taskExecutor for inbound events', async () => {
+    it('should settle escrow permissionlessly for inbound events', async () => {
       await startAndEmit(
         createMockEvent({
           message: VALID_MESSAGE,
@@ -236,8 +221,7 @@ describe('OperatorService', () => {
         }),
       )
 
-      expect(mockTaskExecutor.claimTask).toHaveBeenCalled()
-      expect(mockTaskExecutor.executeTask).toHaveBeenCalled()
+      expect(mockMessageRelay.settle).toHaveBeenCalledWith(VALID_MESSAGE, VALID_ATTESTATION)
       expect(mockMessageRelay.relayMessage).not.toHaveBeenCalled()
     })
 
@@ -247,7 +231,7 @@ describe('OperatorService', () => {
       expect(mockAttestationProvider.waitForAttestation).toHaveBeenCalledWith(VALID_TX_HASH, 421614)
     })
 
-    it('should complete job on successful execution', async () => {
+    it('should complete job on successful settlement', async () => {
       await startAndEmit(
         createMockEvent({
           message: VALID_MESSAGE,
@@ -258,11 +242,11 @@ describe('OperatorService', () => {
       const jobs = jobRepository.findAll()
       expect(jobs).toHaveLength(1)
       expect(jobs[0].status).toBe('completed')
-      expect(jobs[0].operatorFee).toBe(100n)
+      expect(jobs[0].executionTxHash?.value).toBe(RESULT_TX_HASH)
     })
 
-    it('should handle task execution failure', async () => {
-      mockTaskExecutor.executeTask.mockResolvedValue({
+    it('should handle settlement failure', async () => {
+      mockMessageRelay.settle.mockResolvedValue({
         success: false,
         error: 'revert',
       })
@@ -285,7 +269,7 @@ describe('OperatorService', () => {
       await startAndEmit(createOutboundEvent())
 
       expect(mockMessageRelay.relayMessage).toHaveBeenCalled()
-      expect(mockTaskExecutor.executeTask).not.toHaveBeenCalled()
+      expect(mockMessageRelay.settle).not.toHaveBeenCalled()
     })
 
     it('should route default events to inbound handler', async () => {
@@ -296,7 +280,7 @@ describe('OperatorService', () => {
         }),
       )
 
-      expect(mockTaskExecutor.executeTask).toHaveBeenCalled()
+      expect(mockMessageRelay.settle).toHaveBeenCalled()
       expect(mockMessageRelay.relayMessage).not.toHaveBeenCalled()
     })
 
@@ -309,7 +293,7 @@ describe('OperatorService', () => {
         }),
       )
 
-      expect(mockTaskExecutor.executeTask).toHaveBeenCalled()
+      expect(mockMessageRelay.settle).toHaveBeenCalled()
       expect(mockMessageRelay.relayMessage).not.toHaveBeenCalled()
     })
   })
@@ -319,7 +303,7 @@ describe('OperatorService', () => {
       await service.start()
 
       expect(mockCoordinatorClient.connect).toHaveBeenCalled()
-      expect(mockTaskExecutor.getOperatorStatus).toHaveBeenCalled()
+      expect(mockMessageRelay.getOperatorAddress).toHaveBeenCalled()
     })
 
     it('should disconnect on stop', async () => {
@@ -342,7 +326,7 @@ describe('OperatorService', () => {
       const status = service.getStatus()
       expect(status.isRunning).toBe(true)
       expect(status.isConnected).toBe(true)
-      expect(status.operatorAddress).toBe('0x' + '1'.repeat(40))
+      expect(status.operatorAddress).toBe(OPERATOR_ADDRESS)
     })
   })
 

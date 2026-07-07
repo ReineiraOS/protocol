@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config'
 import { Subject, Observable } from 'rxjs'
 import EventSource from 'eventsource'
 import { CoordinatorClientPort, RelayEvent } from '../../domain/ports/coordinator-client.port'
+import { addressFromPrivateKey } from './wallet.util'
 
 @Injectable()
 export class SseCoordinatorClientAdapter implements CoordinatorClientPort, OnModuleDestroy {
@@ -17,7 +18,12 @@ export class SseCoordinatorClientAdapter implements CoordinatorClientPort, OnMod
 
   constructor(configService: ConfigService) {
     this.coordinatorUrl = configService.get<string>('COORDINATOR_URL', 'http://localhost:3001')
-    this.operatorAddress = configService.get<string>('OPERATOR_ADDRESS', '')
+    // No registration: the SSE subscription is keyed by the relayer's wallet
+    // address. OPERATOR_ADDRESS is an optional override; otherwise derive it
+    // from PRIVATE_KEY.
+    this.operatorAddress =
+      configService.get<string>('OPERATOR_ADDRESS', '') ||
+      addressFromPrivateKey(configService.get<string>('PRIVATE_KEY', ''))
   }
 
   connect(): Observable<RelayEvent> {

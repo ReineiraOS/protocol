@@ -4,18 +4,20 @@ Automated operator service for processing CCTP cross-chain messages.
 
 ## Overview
 
-The operator service:
+The operator service is a **permissionless relayer**:
 
 1. Subscribes to the Coordinator service via SSE (Server-Sent Events)
 2. Receives relay job assignments
 3. Fetches attestations from Circle's Iris API
-4. Claims tasks in the OperatorRegistry for exclusive execution
-5. Executes tasks via the TaskExecutor contract
+4. Calls `CCTPV2EscrowReceiver.settle(message, attestation)` on the destination chain
+
+There is no registration, staking, or task-claim step — the receiver verifies the
+Circle attestation on-chain, so anyone can settle a pending message.
 
 ## Prerequisites
 
 - Node.js 18+
-- A registered operator address with staked GOV tokens
+- A funded wallet for destination-chain gas (no stake required)
 - Access to Arbitrum Sepolia RPC
 
 ## Setup
@@ -29,12 +31,11 @@ cp .env.example .env
 2. Configure your environment variables:
 
 ```env
-OPERATOR_ADDRESS=0x...           # Your operator address
-PRIVATE_KEY=0x...                # Private key for signing
+PRIVATE_KEY=0x...                # Private key for signing settlement txs
 COORDINATOR_URL=http://localhost:3001
 RPC_URL=https://arbitrum-sepolia-rpc.publicnode.com
-OPERATOR_REGISTRY_ADDRESS=0x5Ac3a3750e0a9f7d4ddBC0B52c3f13E8f927FB59
-TASK_EXECUTOR_ADDRESS=0x4D239335f39E585Bb75631C4683538EFC496a5EB
+ESCROW_RECEIVER_ADDRESS=0xe0E6CC9Ee62Fa36b96eC4F50CDc462Fd14aa0fD3
+ESCROW_CHAIN_ID=421614
 ```
 
 3. Install dependencies:
@@ -74,12 +75,12 @@ flowchart TB
     subgraph Operator["Operator Service"]
         CC["CoordinatorClientAdapter"]
         AS["AttestationProviderAdapter"]
-        TE["TaskExecutorAdapter"]
+        MR["MessageRelayAdapter (settle)"]
         OS["OperatorService"]
 
         CC -->|RelayEvent| OS
         OS -->|fetch| AS
-        OS -->|claim & execute| TE
+        OS -->|settle| MR
     end
 
     subgraph External["External Services"]
@@ -89,7 +90,7 @@ flowchart TB
 
     SSE -->|RelayEvent| CC
     AS -->|GET /v2/messages| IRIS
-    TE -->|transactions| BC
+    MR -->|settle tx| BC
 ```
 
 ## Message Flow
@@ -99,16 +100,13 @@ sequenceDiagram
     participant C as Coordinator
     participant O as Operator Service
     participant I as Circle Iris API
-    participant OR as OperatorRegistry
-    participant TE as TaskExecutor
+    participant R as CCTPV2EscrowReceiver
 
     C->>O: SSE RelayEvent (txHash, sourceChainId)
     O->>I: GET /v2/messages/{domain}?transactionHash={txHash}
     I-->>O: message + attestation
-    O->>OR: claimTask(taskHash)
-    OR-->>O: claim confirmed
-    O->>TE: executeTask(taskType, payload)
-    TE-->>O: success + operatorFee
+    O->>R: settle(message, attestation)
+    R-->>O: escrow funded
 ```
 
 ## Job State Machine
@@ -117,12 +115,10 @@ sequenceDiagram
 stateDiagram-v2
     [*] --> pending: Job Created
     pending --> fetching_attestation: Start Fetch
-    fetching_attestation --> claiming: Attestation Received
-    claiming --> executing: Task Claimed
-    executing --> completed: Task Success
-    executing --> failed: Task Failed
+    fetching_attestation --> executing: Attestation Received
+    executing --> completed: Settle Success
+    executing --> failed: Settle Failed
     fetching_attestation --> failed: Timeout/Error
-    claiming --> failed: Claim Failed
 ```
 
 ## API Endpoints
@@ -138,18 +134,17 @@ The operator exposes a REST API for monitoring. See [openapi.yaml](./openapi.yam
 
 ## Environment Variables
 
-| Variable                    | Description                          | Default                               |
-| --------------------------- | ------------------------------------ | ------------------------------------- |
-| `OPERATOR_ADDRESS`          | Your operator's Ethereum address     | Required                              |
-| `PRIVATE_KEY`               | Private key for signing transactions | Required                              |
-| `COORDINATOR_URL`           | Coordinator service URL              | `http://localhost:3001`               |
-| `RPC_URL`                   | Arbitrum Sepolia RPC URL             | Required                              |
-| `TASK_EXECUTOR_ADDRESS`     | TaskExecutor contract address        | Required                              |
-| `OPERATOR_REGISTRY_ADDRESS` | OperatorRegistry contract address    | Required                              |
-| `IRIS_API_URL`              | Circle Iris attestation API          | `https://iris-api-sandbox.circle.com` |
-| `POLLING_INTERVAL_MS`       | Attestation polling interval         | `2000`                                |
-| `ATTESTATION_TIMEOUT_MS`    | Max wait time for attestation        | `300000`                              |
-| `PORT`                      | HTTP server port                     | `3002`                                |
+| Variable                  | Description                            | Default                               |
+| ------------------------- | -------------------------------------- | ------------------------------------- |
+| `PRIVATE_KEY`             | Private key for signing settlement txs | Required                              |
+| `COORDINATOR_URL`         | Coordinator service URL                | `http://localhost:3001`               |
+| `RPC_URL`                 | Arbitrum Sepolia RPC URL               | Required                              |
+| `ESCROW_RECEIVER_ADDRESS` | CCTPV2EscrowReceiver contract address  | Required                              |
+| `ESCROW_CHAIN_ID`         | Chain the escrow receiver lives on     | `421614`                              |
+| `IRIS_API_URL`            | Circle Iris attestation API            | `https://iris-api-sandbox.circle.com` |
+| `POLLING_INTERVAL_MS`     | Attestation polling interval           | `2000`                                |
+| `ATTESTATION_TIMEOUT_MS`  | Max wait time for attestation          | `300000`                              |
+| `PORT`                    | HTTP server port                       | `3002`                                |
 
 ## Manual Relay (CLI)
 
@@ -163,8 +158,8 @@ npx reineira-operator relay --tx-hash 0x907e4defd98dd9e202db20fa4242eda19b439856
 This will:
 
 1. Fetch the attestation from Circle's Iris API
-2. Execute the task on the destination chain
-3. Display the result including fees earned
+2. Call `settle(message, attestation)` on the escrow receiver
+3. Display the settled escrow ID and amount
 
 ## Development
 
