@@ -19,7 +19,7 @@
     "@cofhe/mock-contracts": "^0.5.2",
     "@cofhe/foundry-plugin": "^0.5.2",
     "@openzeppelin/contracts": "~5.4.0",
-    "@openzeppelin/contracts-upgradeable": "~5.6.1",
+    "@openzeppelin/contracts-upgradeable": "~5.4.0",
     "@reineira-os/shared": "workspace:*",
     "fhenix-confidential-contracts": "github:FhenixProtocol/fhenix-confidential-contracts#0823e57e320c1c72e0caee7faeebc4d3a0710373"
   },
