@@ -19,8 +19,8 @@ responding to, remediating, or rewarding any report, or to any timeline.
 
 ## Scope
 
-On-chain contracts under `packages/escrow`, `packages/recourse`,
-`packages/orchestration`, and `packages/shared`.
+On-chain contracts under `packages/escrow`, `packages/recourse`, and
+`packages/shared`.
 
 Out of scope: third-party dependencies (OpenZeppelin, Fhenix CoFHE,
 `fhenix-confidential-contracts`, Circle CCTP) — report those to their respective

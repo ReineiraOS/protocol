@@ -16,7 +16,6 @@
 - [ ] `@reineira-os/shared`
 - [ ] `@reineira-os/escrow`
 - [ ] `@reineira-os/recourse`
-- [ ] `@reineira-os/orchestration`
 - [ ] `@reineira-os/sdk`
 - [ ] Operators
 
