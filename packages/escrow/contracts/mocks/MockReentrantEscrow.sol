@@ -48,6 +48,14 @@ contract MockReentrantEscrow is IEscrow {
     function total() external view returns (uint256) {
         return 0;
     }
+    function paymentTokenOf(uint256) external view returns (address) {
+        return address(0);
+    }
+    function addAllowedToken(address) external {}
+    function removeAllowedToken(address) external {}
+    function isAllowedToken(address) external view returns (bool) {
+        return true;
+    }
     function registerFeeModule(uint8, address) external {}
     function setCoverageManager(address) external {}
     function getFeeModule(uint8) external view returns (address) {
