@@ -24,30 +24,29 @@ on testnet. Treat every line as subject to change.
 
 ## By package
 
-| Package                      | Status         | Notes                                                                                                              |
-| ---------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `@reineira-os/shared`        | ✅ Implemented | Base contracts, interfaces, and mocks shared across packages.                                                      |
-| `@reineira-os/escrow`        | ✅ Implemented | Confidential FHE escrow + CCTP V2 cross-chain USDC. Core settlement paths covered by tests.                        |
-| `@reineira-os/recourse`      | 🟡 Partial     | Pools, factory, registry, coverage manager, and router ship; underwriter policy and LP rewards do not (see below). |
-| `@reineira-os/orchestration` | 🟡 Partial     | Operator registration, staking, tasks, fees, and slashing are in progress — not yet finished.                      |
-| `@reineira-os/operators`     | 🟡 Partial     | Off-chain operator infrastructure (NestJS) — in progress, not yet finished.                                        |
-| `@reineira-os/sdk`           | ✅ Implemented | TypeScript client for the protocol.                                                                                |
+| Package                  | Status         | Notes                                                                                                                                                 |
+| ------------------------ | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@reineira-os/shared`    | ✅ Implemented | Base contracts, interfaces, and mocks shared across packages.                                                                                         |
+| `@reineira-os/escrow`    | ✅ Implemented | Confidential FHE escrow + CCTP V2 cross-chain USDC. Core settlement paths covered by tests.                                                           |
+| `@reineira-os/recourse`  | 🟡 Partial     | Pools, factory, registry, coverage manager, and router ship; underwriter policy and LP rewards do not (see below).                                    |
+| `@reineira-os/operators` | 🟡 Partial     | Off-chain relayer infrastructure (NestJS). The on-chain operator staking stack (`orchestration`) was removed — settlement is permissionless (see §8). |
+| `@reineira-os/sdk`       | ✅ Implemented | TypeScript client for the protocol.                                                                                                                   |
 
 ## By whitepaper section
 
-| §     | Area                         | Status         | Notes                                                                          |
-| ----- | ---------------------------- | -------------- | ------------------------------------------------------------------------------ |
-| §5    | Reineira Settlement Standard | ✅ Implemented | Open RSS interfaces present.                                                   |
-| §6    | Escrow engine                | ✅ Implemented | Confidential escrow + cross-chain settlement.                                  |
-| §7.2  | Recourse pool roles          | ✅ Implemented | Pool Creator / Manager / LP roles enforced in plain and confidential pools.    |
-| §7.10 | Underwriter policy           | 🟡 Partial     | `IUnderwriterPolicy` is pluggable; only mocks ship. No production risk model.  |
-| §7.x  | LP reward accounting         | 🟡 Partial     | `pendingRewards()` / `claimRewards()` are stubs (see Known gaps).              |
-| §8    | Operator network             | 🟡 Partial     | On-chain staking/tasks/fees/slashing and off-chain services both in progress.  |
-| §9    | Cross-chain (L2/L3)          | 🟡 Partial     | CCTP V2 USDC paths ship; full L3 graduation path is roadmap.                   |
-| §10   | Security                     | 🟡 Partial     | ReentrancyGuard, access control, replay protection in place; **no audit yet.** |
-| §11   | Governance                   | ⏳ Planned     | Ownable/UUPS today; decentralized governance is future work.                   |
-| §12   | Tokenomics                   | ⏳ Planned     | No token. Described as design intent only.                                     |
-| §13   | Licensing                    | ✅ Implemented | Per-layer licensing live — see [LICENSE](../LICENSE) / [NOTICE](../NOTICE).    |
+| §     | Area                         | Status         | Notes                                                                                                                                                                            |
+| ----- | ---------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| §5    | Reineira Settlement Standard | ✅ Implemented | Open RSS interfaces present.                                                                                                                                                     |
+| §6    | Escrow engine                | ✅ Implemented | Confidential escrow + cross-chain settlement.                                                                                                                                    |
+| §7.2  | Recourse pool roles          | ✅ Implemented | Pool Creator / Manager / LP roles enforced in plain and confidential pools.                                                                                                      |
+| §7.10 | Underwriter policy           | 🟡 Partial     | `IUnderwriterPolicy` is pluggable; only mocks ship. No production risk model.                                                                                                    |
+| §7.x  | LP reward accounting         | 🟡 Partial     | `pendingRewards()` / `claimRewards()` are stubs (see Known gaps).                                                                                                                |
+| §8    | Operator network             | 🟡 Partial     | On-chain operator staking/slashing/fees removed; settlement is permissionless and attestation-gated. Operators are relayers; restaking (EigenLayer) is a future opt-in backstop. |
+| §9    | Cross-chain (L2/L3)          | 🟡 Partial     | CCTP V2 USDC paths ship; full L3 graduation path is roadmap.                                                                                                                     |
+| §10   | Security                     | 🟡 Partial     | ReentrancyGuard, access control, replay protection in place; **no audit yet.**                                                                                                   |
+| §11   | Governance                   | ⏳ Planned     | Ownable/UUPS today; decentralized governance is future work.                                                                                                                     |
+| §12   | Tokenomics                   | ⏳ Planned     | No token. Described as design intent only.                                                                                                                                       |
+| §13   | Licensing                    | ✅ Implemented | Per-layer licensing live — see [LICENSE](../LICENSE) / [NOTICE](../NOTICE).                                                                                                      |
 
 ## Known gaps
 
@@ -72,10 +71,13 @@ the whitepaper. They are disclosed deliberately.
    Pools hold one undifferentiated capital bucket. Tranching / waterfall
    seniority described as design intent is not implemented.
 
-4. **Operator network is still in progress (§8).**
-   Both the on-chain `orchestration` package (registration, staking, tasks,
-   fees, slashing) and the off-chain `operators` services are under active
-   development and are not yet feature-complete.
+4. **Operator network simplified to permissionless settlement (§8).**
+   The on-chain operator staking stack (`orchestration`: registration, staking,
+   tasks, fees, slashing) has been removed. `CCTPV2EscrowReceiver.settle()` is
+   permissionless and attestation-gated, so any party can settle a bridged
+   message; operators are reduced to relayers. The off-chain `operators` service
+   rewrite to call `settle()` directly is the remaining follow-up. Restaking
+   (EigenLayer) is a future, opt-in recourse backstop, not built.
 
 5. **No external audit.**
    No contract here has been audited. All core contracts are upgradeable on

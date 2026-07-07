@@ -126,4 +126,25 @@ interface IEscrow is IERC165, ICore, IEscrowEvents {
     /// @notice Assigns the coverage manager authorized to call `setUnderwriterFee`
     /// @param coverageManager The new coverage manager address
     function setCoverageManager(address coverageManager) external;
+
+    /// @notice Returns the payment token bound to a specific escrow at creation
+    /// @dev Escrows created without an explicit token fall back to the engine default.
+    /// @param escrowId The escrow identifier
+    /// @return The ERC20/FHERC20 token address used to fund and redeem this escrow
+    function paymentTokenOf(uint256 escrowId) external view returns (address);
+
+    /// @notice Adds a token to the per-escrow payment-token allow-list
+    /// @dev Owner-only. Allowed tokens may be selected as the payment token at create.
+    /// @param token The token address to allow (must be non-zero)
+    function addAllowedToken(address token) external;
+
+    /// @notice Removes a token from the per-escrow payment-token allow-list
+    /// @dev Owner-only. Does not affect escrows already created with this token.
+    /// @param token The token address to disallow
+    function removeAllowedToken(address token) external;
+
+    /// @notice Checks whether a token is on the per-escrow payment-token allow-list
+    /// @param token The token address to query
+    /// @return True if the token may be selected as a payment token at create
+    function isAllowedToken(address token) external view returns (bool);
 }

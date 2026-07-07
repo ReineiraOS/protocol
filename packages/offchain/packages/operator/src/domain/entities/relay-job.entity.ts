@@ -6,7 +6,6 @@ import { MessageHash } from '../value-objects/message-hash.value-object'
 export type RelayJobStatus =
   | 'pending'
   | 'fetching_attestation'
-  | 'claiming'
   | 'executing'
   | 'completed'
   | 'failed'
@@ -18,7 +17,6 @@ const NON_RETRYABLE_ERRORS = [
   'already received',
   'message already processed',
   'Not authorized',
-  'insufficient stake',
 ]
 
 export function isRetryableError(error: string): boolean {
@@ -139,20 +137,6 @@ export class RelayJob {
     this._messageHash = MessageHash.fromMessage(message)
   }
 
-  startClaiming(): void {
-    if (this._status !== 'pending' && this._status !== 'fetching_attestation') {
-      throw new Error(`Cannot start claiming from status: ${this._status}`)
-    }
-    this._status = 'claiming'
-  }
-
-  startExecuting(): void {
-    if (this._status !== 'claiming') {
-      throw new Error(`Cannot start executing from status: ${this._status}`)
-    }
-    this._status = 'executing'
-  }
-
   startRelaying(): void {
     if (this._status !== 'pending' && this._status !== 'fetching_attestation') {
       throw new Error(`Cannot start relaying from status: ${this._status}`)
@@ -200,13 +184,14 @@ export class RelayJob {
   }
 
   /**
-   * Reset job to claiming state for retry execution
+   * Reset job to executing state for retry execution (permissionless settle —
+   * no claim phase).
    */
   startRetry(): void {
     if (this._status !== 'pending_retry') {
       throw new Error(`Cannot start retry from status: ${this._status}`)
     }
-    this._status = 'claiming'
+    this._status = 'executing'
     this._nextRetryAt = undefined
   }
 

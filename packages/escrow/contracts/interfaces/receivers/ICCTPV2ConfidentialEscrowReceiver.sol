@@ -21,6 +21,12 @@ interface ICCTPV2ConfidentialEscrowReceiver {
     /// @notice Thrown when hook data cannot be decoded
     error MalformedHookData();
 
+    /// @notice Thrown when the target escrow's payment token is not the wrapped USDC bridged by CCTP
+    /// @param escrowId The escrow identifier being settled
+    /// @param expected The token CCTP can settle (the configured confidential USDC)
+    /// @param actual The payment token the escrow was created with
+    error EscrowTokenMismatch(uint256 escrowId, address expected, address actual);
+
     /// @notice Emitted when an escrow is settled via a cross-chain USDC transfer
     /// @param escrowId The settled escrow identifier
     /// @param relayer The address that relayed the settlement

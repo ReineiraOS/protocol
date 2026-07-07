@@ -2,9 +2,10 @@
   "name": "@reineira-ops/operator-cli",
   "version": "0.1.0",
   "license": "Apache-2.0",
-  "description": "Reineira operator CLI",
+  "description": "Reineira development, debugging & deployment CLI",
   "main": "dist/index.js",
   "bin": {
+    "reineira": "./dist/index.js",
     "reineira-operator": "./dist/index.js"
   },
   "scripts": {

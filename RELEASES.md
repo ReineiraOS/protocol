@@ -164,12 +164,12 @@ bps, address recipient)` and ERC‑165 `supportsInterface`**, or they will not r
 
 ### 📦 Packages & licensing
 
-Six packages: `escrow`, `recourse`, `orchestration` (Solidity), `shared` (interfaces,
+Five packages: `escrow`, `recourse` (Solidity), `shared` (interfaces,
 libraries, base contracts), `offchain` (operator/coordinator/CLI), `sdk` (TypeScript).
 
 | Area                                                        | License                                   |
 | ----------------------------------------------------------- | ----------------------------------------- |
-| Core protocol — `escrow`, `recourse`, `orchestration`       | FSL‑1.1‑ALv2 (→ Apache‑2.0 after 2 years) |
+| Core protocol — `escrow`, `recourse`                        | FSL‑1.1‑ALv2 (→ Apache‑2.0 after 2 years) |
 | `shared`, `offchain`                                        | Apache‑2.0                                |
 | `sdk`                                                       | MIT                                       |
 | Vendored — `FHEMeta.sol` (Fhenix CoFHE), CCTP V2 interfaces | BSD‑3‑Clause‑Clear                        |

@@ -91,6 +91,18 @@ importers:
         specifier: github:FhenixProtocol/fhenix-confidential-contracts#0823e57e320c1c72e0caee7faeebc4d3a0710373
         version: https://codeload.github.com/FhenixProtocol/fhenix-confidential-contracts/tar.gz/0823e57e320c1c72e0caee7faeebc4d3a0710373(ethers@6.16.0)(typechain@8.3.2(typescript@5.9.3))(typescript@5.9.3)
 
+  packages/identity:
+    dependencies:
+      '@openzeppelin/contracts':
+        specifier: ~5.2.0
+        version: 5.2.0
+      '@openzeppelin/contracts-upgradeable':
+        specifier: ~5.2.0
+        version: 5.2.0(@openzeppelin/contracts@5.2.0)
+      '@reineira-os/shared':
+        specifier: workspace:*
+        version: link:../shared
+
   packages/offchain:
     devDependencies:
       '@typescript-eslint/eslint-plugin':
