@@ -21,11 +21,7 @@ export interface ERC20Contract {
 }
 
 export function getEscrowReceiverContract(address: string, wallet: Wallet): EscrowReceiverContract {
-  return new Contract(
-    address,
-    CCTPV2EscrowReceiverABI,
-    wallet,
-  ) as unknown as EscrowReceiverContract
+  return new Contract(address, CCTPV2EscrowReceiverABI, wallet) as unknown as EscrowReceiverContract
 }
 
 export function getERC20Contract(address: string, wallet: Wallet): ERC20Contract {

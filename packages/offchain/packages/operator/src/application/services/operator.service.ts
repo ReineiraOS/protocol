@@ -54,10 +54,10 @@ export class OperatorService implements OnModuleInit, OnModuleDestroy {
     this.stop()
   }
 
-  async start(): Promise<void> {
+  start(): Promise<void> {
     if (this.isRunning) {
       this.logger.warn('Operator is already running')
-      return
+      return Promise.resolve()
     }
 
     this.logger.log('Starting operator service...')
@@ -86,6 +86,7 @@ export class OperatorService implements OnModuleInit, OnModuleDestroy {
     }, RETRY_CHECK_INTERVAL_MS)
 
     this.logger.log('Operator service started, listening for relay events...')
+    return Promise.resolve()
   }
 
   stop(): void {
