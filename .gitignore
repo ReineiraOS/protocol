@@ -29,3 +29,8 @@ Thumbs.db
 .pk
 
 .openzeppelin/
+
+# demo wallet private key (testnet only) — never commit
+.demo-wallet.json
+.demo-client-wallet.json
+.demo-verdict-signer.json

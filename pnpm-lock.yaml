@@ -334,6 +334,25 @@ importers:
         specifier: github:FhenixProtocol/fhenix-confidential-contracts#0823e57e320c1c72e0caee7faeebc4d3a0710373
         version: https://codeload.github.com/FhenixProtocol/fhenix-confidential-contracts/tar.gz/0823e57e320c1c72e0caee7faeebc4d3a0710373(ethers@6.16.0)(typechain@8.3.2(typescript@5.9.3))(typescript@5.9.3)
 
+  packages/recourse-agent:
+    dependencies:
+      '@reineira-os/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+      ethers:
+        specifier: ^6.16.0
+        version: 6.16.0
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.37
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.6.0
+        version: 1.6.1(@types/node@20.19.37)(terser@5.46.0)
+
   packages/sdk:
     dependencies:
       '@cofhe/sdk':
