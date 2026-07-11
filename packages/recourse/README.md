@@ -1,5 +1,12 @@
 # Reineira Protocol
 
+> **Status: testnet, pre-audit, partial.** This package demonstrates operator-funded recourse
+> mechanics. `IUnderwriterPolicy` is pluggable, but only mocks ship; LP rewards are stubbed and the
+> capital model is a single flat pool. References to underwriters, premiums, coverage, disputes,
+> and claims below are API/domain names, not evidence of a live insurance product, carrier
+> capacity, or production underwriting. See
+> [`../../docs/IMPLEMENTATION-STATUS.md`](../../docs/IMPLEMENTATION-STATUS.md).
+
 Confidential on-chain recourse protocol built on [Fhenix](https://www.fhenix.io/) (FHE blockchain). All sensitive data — stakes, premiums, coverage amounts, and risk scores — is encrypted end-to-end using Fully Homomorphic Encryption.
 
 ## Architecture

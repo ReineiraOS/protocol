@@ -1,5 +1,8 @@
 # Plain Mode E2E Suite
 
+> These tests exercise testnet/demo interfaces. Coverage purchase, disputes, and underwriter
+> policies do not represent a live insurance product; underwriter logic is mock-only.
+
 End-to-end smoke harness for the plain (non-FHE) protocol path.
 Uses [`anvil`](https://book.getfoundry.sh/anvil/) + the plain `Deploy.s.sol`
 scripts + `@reineira-os/sdk`'s plain modules.

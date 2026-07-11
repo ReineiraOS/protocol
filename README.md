@@ -1,6 +1,8 @@
 # ReineiraOS
 
-FHE-encrypted stablecoin infrastructure on Arbitrum. Powered by Fhenix CoFHE.
+Testnet settlement and recourse infrastructure used by Reineira's execution-accountability
+stack. The current demonstration rail is operator-funded stablecoin self-bonding on Arbitrum;
+carrier and insurance interfaces are mock R&D only. Powered in part by Fhenix CoFHE.
 
 ## Packages
 
@@ -8,7 +10,7 @@ FHE-encrypted stablecoin infrastructure on Arbitrum. Powered by Fhenix CoFHE.
 | ------------------------ | -------------------------------------------------------------------- |
 | `@reineira-os/shared`    | Shared Solidity contracts, interfaces, and base configs              |
 | `@reineira-os/escrow`    | Confidential escrow protocol (FHE-encrypted)                         |
-| `@reineira-os/recourse`  | Recourse protocol with underwriter policies                          |
+| `@reineira-os/recourse`  | Partial recourse protocol; underwriter policies are mock-only        |
 | `@reineira-os/operators` | Off-chain operator infrastructure (NestJS monorepo)                  |
 | `@reineira-os/sdk`       | TypeScript SDK — the installable client for building on the protocol |
 

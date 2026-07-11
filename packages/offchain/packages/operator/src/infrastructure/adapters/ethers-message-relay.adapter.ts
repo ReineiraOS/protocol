@@ -7,6 +7,7 @@ import {
   NonceManager,
   Signer,
   ContractTransactionResponse,
+  ContractTransactionReceipt,
 } from 'ethers'
 import { MessageRelayPort, MessageRelayResult } from '../../domain/ports/message-relay.port'
 import { addressFromPrivateKey } from './wallet.util'
@@ -148,7 +149,7 @@ export class EthersMessageRelayAdapter implements MessageRelayPort {
 
       this.logger.log(`Relay transaction submitted: ${tx.hash}`)
 
-      const receipt = await tx.wait()
+      const receipt = (await tx.wait()) as ContractTransactionReceipt | null
       const confirmedHash = receipt?.hash ?? tx.hash
       this.logger.log(`Relay transaction confirmed: ${confirmedHash}`)
 
@@ -183,7 +184,7 @@ export class EthersMessageRelayAdapter implements MessageRelayPort {
       const tx = (await contract.settle(message, attestation)) as ContractTransactionResponse
       this.logger.log(`Settle transaction submitted: ${tx.hash}`)
 
-      const receipt = await tx.wait()
+      const receipt = (await tx.wait()) as ContractTransactionReceipt | null
       const confirmedHash = receipt?.hash ?? tx.hash
       this.logger.log(`Settle transaction confirmed: ${confirmedHash}`)
 

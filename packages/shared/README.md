@@ -1,5 +1,9 @@
 # @reineira-os/shared
 
+> **Status: testnet, pre-audit.** Insurance-coded interface names are protocol abstractions. Only
+> mock underwriter policies ship today; no live carrier capacity or production underwriting is
+> provided. See [`../../docs/IMPLEMENTATION-STATUS.md`](../../docs/IMPLEMENTATION-STATUS.md).
+
 Base contracts, interfaces, and mocks shared across all ReineiraOS protocol packages.
 
 ## Contents
