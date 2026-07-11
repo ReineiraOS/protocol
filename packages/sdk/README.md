@@ -1,5 +1,10 @@
 # @reineira-os/sdk
 
+> **Status: testnet, pre-audit.** Recourse and coverage examples exercise protocol interfaces and
+> demonstration contracts. Underwriter policy logic is mock-only; these examples do not create a
+> live policy, carrier capacity, or production insurance product. See
+> [`../../docs/IMPLEMENTATION-STATUS.md`](../../docs/IMPLEMENTATION-STATUS.md).
+
 TypeScript SDK for ReineiraOS — programmable confidential settlement on Arbitrum.
 
 ## Install

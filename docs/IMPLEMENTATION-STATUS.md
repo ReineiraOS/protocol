@@ -8,7 +8,16 @@
 > assumed. Where this document and the whitepaper disagree, **this document
 > describes the code; the whitepaper describes the design intent.**
 
-**Last reviewed:** 2026-06-15
+**Last reviewed:** 2026-07-11
+
+## Product interpretation
+
+The current pre-seed demonstration uses selected settlement and recourse interfaces as an
+**operator-funded stablecoin self-bond** rail. Insurance- and underwriter-coded interfaces are
+mock R&D surfaces only. Nothing in this repository represents a live carrier policy, carrier
+capacity, binding authority, claims authority, or production underwriting. Reineira's broader
+decorator, evidence, verifier, Trigger Report, carrier gateway, and Accountability Card product
+layers remain separate build work unless explicitly listed below.
 
 ## How to read this
 
