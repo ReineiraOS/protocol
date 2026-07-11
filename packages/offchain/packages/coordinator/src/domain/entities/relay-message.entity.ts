@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'node:crypto'
 import { ChainId } from '../value-objects/chain-id.value-object'
 import { TransactionHash } from '../value-objects/transaction-hash.value-object'
 
@@ -26,7 +26,7 @@ export class RelayMessage {
   private _assignedAt?: Date
 
   constructor(props: RelayMessageProps) {
-    this.id = uuidv4()
+    this.id = randomUUID()
     this.transactionHash = props.transactionHash
     this.sourceChainId = props.sourceChainId
     this.destinationChainId = props.destinationChainId

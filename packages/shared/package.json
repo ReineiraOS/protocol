@@ -9,8 +9,8 @@
   },
   "dependencies": {
     "@fhenixprotocol/cofhe-contracts": "0.1.3",
-    "@openzeppelin/contracts": "~5.2.0",
-    "@openzeppelin/contracts-upgradeable": "~5.2.0",
+    "@openzeppelin/contracts": "~5.4.0",
+    "@openzeppelin/contracts-upgradeable": "~5.4.0",
     "fhenix-confidential-contracts": "github:FhenixProtocol/fhenix-confidential-contracts#0823e57e320c1c72e0caee7faeebc4d3a0710373"
   },
   "devDependencies": {

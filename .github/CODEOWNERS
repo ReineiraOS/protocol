@@ -9,7 +9,6 @@
 # Security-sensitive core protocol (FSL-1.1-ALv2) — require an admin / protocol lead
 /packages/escrow/               @VladVelik @0xkkkn
 /packages/recourse/            @VladVelik @0xkkkn
-/packages/orchestration/        @VladVelik @0xkkkn
 /packages/shared/               @VladVelik @0xkkkn
 
 # Licensing, governance, security policy, and CI — require an admin

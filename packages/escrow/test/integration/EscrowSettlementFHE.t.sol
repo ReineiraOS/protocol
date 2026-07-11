@@ -275,6 +275,34 @@ contract EscrowSettlementFHETest is FHETestBase {
         escrow.redeem(0);
     }
 
+    function test_settle_revertsWhenEscrowTokenMismatch() public {
+        vm.prank(owner);
+        MockConfidentialToken otherToken = new MockConfidentialToken();
+        vm.prank(owner);
+        escrow.addAllowedToken(address(otherToken));
+
+        InEaddress memory encOwner = createInEaddress(escrowOwner, owner);
+        InEuint64 memory encAmount = createInEuint64(1000000, owner);
+        bytes memory initData = abi.encode(encOwner, encAmount, address(otherToken));
+        vm.prank(owner);
+        uint256 escrowId = escrow.create(initData, address(0), "");
+
+        transmitter.setAmountToMint(1000000);
+        usdc.mint(address(transmitter), 1000000);
+        bytes memory message = buildMockCCTPV2Message(escrowId);
+
+        vm.prank(relayer);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ICCTPV2ConfidentialEscrowReceiver.EscrowTokenMismatch.selector,
+                escrowId,
+                address(token),
+                address(otherToken)
+            )
+        );
+        receiver.settle(message, "");
+    }
+
     function test_accessControl_anyAddressCanRelaySettlement() public {
         _createEscrow(escrowOwner, 1000000);
 

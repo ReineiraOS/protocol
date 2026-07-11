@@ -335,4 +335,166 @@ contract EscrowTest is Test {
         assertFalse(escrow.exists(0));
         assertFalse(escrow.exists(999));
     }
+
+    function test_initialize_allowsDefaultToken() public view {
+        assertTrue(escrow.isAllowedToken(address(usdc)));
+    }
+
+    function test_addAllowedToken_onlyOwner() public {
+        MockUSDC token = new MockUSDC();
+        vm.prank(user1);
+        vm.expectRevert();
+        escrow.addAllowedToken(address(token));
+    }
+
+    function test_addAllowedToken_setsAllowedAndEmits() public {
+        MockUSDC token = new MockUSDC();
+        vm.prank(owner);
+        vm.expectEmit(true, false, false, false);
+        emit IEscrowEvents.TokenAllowed(address(token));
+        escrow.addAllowedToken(address(token));
+        assertTrue(escrow.isAllowedToken(address(token)));
+    }
+
+    function test_addAllowedToken_revertsOnZeroAddress() public {
+        vm.prank(owner);
+        vm.expectRevert();
+        escrow.addAllowedToken(address(0));
+    }
+
+    function test_removeAllowedToken_onlyOwner() public {
+        vm.prank(user1);
+        vm.expectRevert();
+        escrow.removeAllowedToken(address(usdc));
+    }
+
+    function test_removeAllowedToken_clearsAllowedAndEmits() public {
+        vm.prank(owner);
+        vm.expectEmit(true, false, false, false);
+        emit IEscrowEvents.TokenRemoved(address(usdc));
+        escrow.removeAllowedToken(address(usdc));
+        assertFalse(escrow.isAllowedToken(address(usdc)));
+    }
+
+    function test_removeAllowedToken_existingEscrowStillRedeems() public {
+        MockUSDC token = new MockUSDC();
+        vm.prank(owner);
+        escrow.addAllowedToken(address(token));
+
+        vm.prank(user1);
+        escrow.create(abi.encode(user2, ESCROW_AMOUNT, address(token)), address(0), "");
+
+        vm.prank(owner);
+        escrow.removeAllowedToken(address(token));
+
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSelector(EscrowLib.TokenNotAllowed.selector, address(token)));
+        escrow.create(abi.encode(user2, ESCROW_AMOUNT, address(token)), address(0), "");
+
+        token.mint(user1, ESCROW_AMOUNT);
+        vm.startPrank(user1);
+        token.approve(address(escrow), ESCROW_AMOUNT);
+        escrow.fund(0, ESCROW_AMOUNT);
+        vm.stopPrank();
+
+        vm.prank(user2);
+        escrow.redeem(0);
+        assertEq(token.balanceOf(user2), ESCROW_AMOUNT);
+    }
+
+    function test_create_typed_usesDefaultToken() public {
+        vm.prank(user1);
+        escrow.create(user2, ESCROW_AMOUNT, address(0), "");
+        assertEq(escrow.paymentTokenOf(0), address(usdc));
+    }
+
+    function test_create_bytes2Field_usesDefaultToken() public {
+        vm.prank(user1);
+        escrow.create(abi.encode(user2, ESCROW_AMOUNT), address(0), "");
+        assertEq(escrow.paymentTokenOf(0), address(usdc));
+    }
+
+    function test_create_bytes3Field_zeroToken_usesDefaultToken() public {
+        vm.prank(user1);
+        escrow.create(abi.encode(user2, ESCROW_AMOUNT, address(0)), address(0), "");
+        assertEq(escrow.paymentTokenOf(0), address(usdc));
+    }
+
+    function test_create_bytes3Field_allowedToken_setsPaymentTokenOf() public {
+        MockUSDC token = new MockUSDC();
+        vm.prank(owner);
+        escrow.addAllowedToken(address(token));
+
+        vm.prank(user1);
+        escrow.create(abi.encode(user2, ESCROW_AMOUNT, address(token)), address(0), "");
+        assertEq(escrow.paymentTokenOf(0), address(token));
+    }
+
+    function test_create_bytes3Field_notAllowedToken_reverts() public {
+        MockUSDC token = new MockUSDC();
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSelector(EscrowLib.TokenNotAllowed.selector, address(token)));
+        escrow.create(abi.encode(user2, ESCROW_AMOUNT, address(token)), address(0), "");
+    }
+
+    function test_paymentTokenOf_revertsForNonExistent() public {
+        vm.expectRevert(abi.encodeWithSelector(EscrowLib.EscrowDoesNotExist.selector, uint256(0)));
+        escrow.paymentTokenOf(0);
+    }
+
+    function test_fundAndRedeem_useSelectedToken() public {
+        MockUSDC token = new MockUSDC();
+        vm.prank(owner);
+        escrow.addAllowedToken(address(token));
+
+        vm.prank(user1);
+        escrow.create(abi.encode(user2, ESCROW_AMOUNT, address(token)), address(0), "");
+
+        token.mint(user1, ESCROW_AMOUNT);
+        vm.startPrank(user1);
+        token.approve(address(escrow), ESCROW_AMOUNT);
+        escrow.fund(0, ESCROW_AMOUNT);
+        vm.stopPrank();
+
+        assertEq(token.balanceOf(address(escrow)), ESCROW_AMOUNT);
+        assertEq(usdc.balanceOf(address(escrow)), 0);
+
+        vm.prank(user2);
+        escrow.redeem(0);
+
+        assertEq(token.balanceOf(user2), ESCROW_AMOUNT);
+        assertEq(usdc.balanceOf(user2), 0);
+    }
+
+    function test_redeemMultiple_paysEachTokenSeparately() public {
+        MockUSDC token = new MockUSDC();
+        vm.prank(owner);
+        escrow.addAllowedToken(address(token));
+
+        vm.startPrank(user1);
+        escrow.create(user1, ESCROW_AMOUNT, address(0), "");
+        escrow.create(abi.encode(user1, ESCROW_AMOUNT, address(token)), address(0), "");
+        vm.stopPrank();
+
+        usdc.mint(user1, ESCROW_AMOUNT);
+        token.mint(user1, ESCROW_AMOUNT);
+        vm.startPrank(user1);
+        usdc.approve(address(escrow), ESCROW_AMOUNT);
+        token.approve(address(escrow), ESCROW_AMOUNT);
+        escrow.fund(0, ESCROW_AMOUNT);
+        escrow.fund(1, ESCROW_AMOUNT);
+        vm.stopPrank();
+
+        uint256[] memory ids = new uint256[](2);
+        ids[0] = 0;
+        ids[1] = 1;
+
+        vm.prank(user1);
+        escrow.redeemMultiple(ids);
+
+        assertEq(usdc.balanceOf(user1), ESCROW_AMOUNT);
+        assertEq(token.balanceOf(user1), ESCROW_AMOUNT);
+        assertTrue(escrow.getRedeemedStatus(0));
+        assertTrue(escrow.getRedeemedStatus(1));
+    }
 }

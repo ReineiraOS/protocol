@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'node:crypto'
 import { TransactionHash } from '../value-objects/transaction-hash.value-object'
 import { ChainId } from '../value-objects/chain-id.value-object'
 import { MessageHash } from '../value-objects/message-hash.value-object'
@@ -56,7 +56,7 @@ export class RelayJob {
   private _lastError?: string
 
   constructor(props: RelayJobProps) {
-    this.id = uuidv4()
+    this.id = randomUUID()
     this.transactionHash = props.transactionHash
     this.sourceChainId = props.sourceChainId
     this.destinationChainId = props.destinationChainId

@@ -10,9 +10,10 @@ import {EscrowLib} from "@reineira-os/shared/contracts/libraries/EscrowLib.sol";
 import {FeeLib} from "@reineira-os/shared/contracts/libraries/FeeLib.sol";
 import {IEscrow} from "@reineira-os/shared/contracts/interfaces/core/IEscrow.sol";
 import {IConditionResolver} from "@reineira-os/shared/contracts/interfaces/plugins/IConditionResolver.sol";
+import {AllowedTokens} from "../extensions/AllowedTokens.sol";
 import {EscrowCondition} from "../extensions/EscrowCondition.sol";
 
-contract Escrow is IEscrow, EscrowCondition, TestnetCoreBase {
+contract Escrow is IEscrow, AllowedTokens, EscrowCondition, TestnetCoreBase {
     using SafeERC20 for IERC20;
 
     uint256 public constant MAX_BATCH_SIZE = 20;
@@ -37,6 +38,13 @@ contract Escrow is IEscrow, EscrowCondition, TestnetCoreBase {
         bool set;
     }
 
+    enum Redeemability {
+        Ok,
+        NotOwnerErr,
+        NotFullyPaidErr,
+        AlreadyRedeemedErr
+    }
+
     mapping(uint256 => EscrowData) private _escrows;
     mapping(uint256 => Fee[3]) private _fees;
     mapping(uint256 => Fee[]) private _underwriterFees;
@@ -56,7 +64,26 @@ contract Escrow is IEscrow, EscrowCondition, TestnetCoreBase {
         if (paymentToken_ == address(0)) revert ZeroAddress();
         __TestnetCoreBase_init(owner_);
         paymentToken = IERC20(paymentToken_);
+        _seedAllowedToken(paymentToken_);
         emit CoreInitialized(owner_);
+    }
+
+    function addAllowedToken(address token) external onlyOwner {
+        if (token == address(0)) revert ZeroAddress();
+        _addAllowedToken(token);
+    }
+
+    function removeAllowedToken(address token) external onlyOwner {
+        _removeAllowedToken(token);
+    }
+
+    function isAllowedToken(address token) external view returns (bool) {
+        return _isAllowedToken(token);
+    }
+
+    function paymentTokenOf(uint256 escrowId) external view returns (address) {
+        EscrowLib.validateExists(escrowId < _nextId, escrowId);
+        return _paymentTokenOfRaw(escrowId);
     }
 
     function create(
@@ -77,6 +104,7 @@ contract Escrow is IEscrow, EscrowCondition, TestnetCoreBase {
             paidAmount: 0,
             isRedeemed: false
         });
+        _resolvePaymentToken(escrowId, address(0));
 
         if (resolver != address(0)) {
             _setCondition(escrowId, resolver, resolverData);
@@ -92,9 +120,10 @@ contract Escrow is IEscrow, EscrowCondition, TestnetCoreBase {
         address sender = _msgSender();
         EscrowData storage e = _escrows[escrowId];
 
-        uint256 balanceBefore = paymentToken.balanceOf(address(this));
-        paymentToken.safeTransferFrom(sender, address(this), amount);
-        uint256 actualPayment = paymentToken.balanceOf(address(this)) - balanceBefore;
+        IERC20 token = IERC20(_paymentTokenOfRaw(escrowId));
+        uint256 balanceBefore = token.balanceOf(address(this));
+        token.safeTransferFrom(sender, address(this), amount);
+        uint256 actualPayment = token.balanceOf(address(this)) - balanceBefore;
 
         e.paidAmount += actualPayment;
 
@@ -106,47 +135,38 @@ contract Escrow is IEscrow, EscrowCondition, TestnetCoreBase {
         _checkCondition(escrowId);
 
         address sender = _msgSender();
-        EscrowData storage e = _escrows[escrowId];
+        _requireRedeemable(escrowId, sender);
 
-        if (e.owner != sender) revert NotOwner();
-        if (e.paidAmount < e.amount) revert NotFullyPaid();
-        if (e.isRedeemed) revert AlreadyRedeemed();
-
-        e.isRedeemed = true;
-
-        uint256 net = _distributeFees(escrowId, e.paidAmount);
-        if (net > 0) paymentToken.safeTransfer(sender, net);
+        (IERC20 token, uint256 net) = _markAndDistribute(escrowId);
+        if (net > 0) token.safeTransfer(sender, net);
 
         emit EscrowRedeemed(escrowId);
     }
 
     function redeemMultiple(uint256[] calldata escrowIds) external nonReentrant {
-        EscrowLib.validateNonEmpty(escrowIds.length);
-        EscrowLib.validateBatchSize(escrowIds.length, MAX_BATCH_SIZE);
+        uint256 length = escrowIds.length;
+        EscrowLib.validateNonEmpty(length);
+        EscrowLib.validateBatchSize(length, MAX_BATCH_SIZE);
 
         address sender = _msgSender();
-        uint256 totalNet = 0;
 
-        for (uint256 i = 0; i < escrowIds.length; i++) {
+        address[] memory tokens = new address[](length);
+        uint256[] memory nets = new uint256[](length);
+        uint256 uniq = 0;
+
+        for (uint256 i = 0; i < length; i++) {
             uint256 escrowId = escrowIds[i];
 
             if (escrowId >= _nextId) continue;
             if (!_isConditionMet(escrowId)) continue;
+            if (_redeemable(escrowId, sender) != Redeemability.Ok) continue;
 
-            EscrowData storage e = _escrows[escrowId];
-
-            if (e.owner != sender) continue;
-            if (e.paidAmount < e.amount) continue;
-            if (e.isRedeemed) continue;
-
-            e.isRedeemed = true;
-
-            uint256 net = _distributeFees(escrowId, e.paidAmount);
-            totalNet += net;
+            (IERC20 token, uint256 net) = _markAndDistribute(escrowId);
+            uniq = _accumulate(tokens, nets, uniq, address(token), net);
         }
 
-        if (totalNet > 0) {
-            paymentToken.safeTransfer(sender, totalNet);
+        for (uint256 j = 0; j < uniq; j++) {
+            if (nets[j] > 0) IERC20(tokens[j]).safeTransfer(sender, nets[j]);
         }
 
         emit EscrowBatchRedeemed(escrowIds);
@@ -234,7 +254,14 @@ contract Escrow is IEscrow, EscrowCondition, TestnetCoreBase {
         address resolver,
         bytes calldata resolverData
     ) external nonReentrant returns (uint256 escrowId) {
-        (address owner_, uint256 amount_) = abi.decode(initData, (address, uint256));
+        address owner_;
+        uint256 amount_;
+        address token_;
+        if (initData.length == 96) {
+            (owner_, amount_, token_) = abi.decode(initData, (address, uint256, address));
+        } else {
+            (owner_, amount_) = abi.decode(initData, (address, uint256));
+        }
 
         if (owner_ == address(0)) revert ZeroAddress();
 
@@ -248,6 +275,7 @@ contract Escrow is IEscrow, EscrowCondition, TestnetCoreBase {
             paidAmount: 0,
             isRedeemed: false
         });
+        _resolvePaymentToken(escrowId, token_);
 
         if (resolver != address(0)) {
             _setCondition(escrowId, resolver, resolverData);
@@ -265,9 +293,10 @@ contract Escrow is IEscrow, EscrowCondition, TestnetCoreBase {
         address sender = _msgSender();
         EscrowData storage e = _escrows[escrowId];
 
-        uint256 balanceBefore = paymentToken.balanceOf(address(this));
-        paymentToken.safeTransferFrom(sender, address(this), amount);
-        uint256 actualPayment = paymentToken.balanceOf(address(this)) - balanceBefore;
+        IERC20 token = IERC20(_paymentTokenOfRaw(escrowId));
+        uint256 balanceBefore = token.balanceOf(address(this));
+        token.safeTransferFrom(sender, address(this), amount);
+        uint256 actualPayment = token.balanceOf(address(this)) - balanceBefore;
 
         e.paidAmount += actualPayment;
 
@@ -289,17 +318,10 @@ contract Escrow is IEscrow, EscrowCondition, TestnetCoreBase {
         EscrowLib.validateExists(escrowId < _nextId, escrowId);
         _checkCondition(escrowId);
 
-        address sender = _msgSender();
-        EscrowData storage e = _escrows[escrowId];
+        _requireRedeemable(escrowId, _msgSender());
 
-        if (e.owner != sender) revert NotOwner();
-        if (e.paidAmount < e.amount) revert NotFullyPaid();
-        if (e.isRedeemed) revert AlreadyRedeemed();
-
-        e.isRedeemed = true;
-
-        uint256 net = _distributeFees(escrowId, e.paidAmount);
-        if (net > 0) paymentToken.safeTransfer(recipient, net);
+        (IERC20 token, uint256 net) = _markAndDistribute(escrowId);
+        if (net > 0) token.safeTransfer(recipient, net);
 
         emit EscrowRedeemed(escrowId);
     }
@@ -347,7 +369,47 @@ contract Escrow is IEscrow, EscrowCondition, TestnetCoreBase {
         emit FeeStamped(escrowId, kind, bps, recipient);
     }
 
-    function _distributeFees(uint256 escrowId, uint256 paidAmount) private returns (uint256 net) {
+    function _redeemable(uint256 escrowId, address sender) private view returns (Redeemability) {
+        EscrowData storage e = _escrows[escrowId];
+        if (e.owner != sender) return Redeemability.NotOwnerErr;
+        if (e.paidAmount < e.amount) return Redeemability.NotFullyPaidErr;
+        if (e.isRedeemed) return Redeemability.AlreadyRedeemedErr;
+        return Redeemability.Ok;
+    }
+
+    function _requireRedeemable(uint256 escrowId, address sender) private view {
+        Redeemability r = _redeemable(escrowId, sender);
+        if (r == Redeemability.NotOwnerErr) revert NotOwner();
+        if (r == Redeemability.NotFullyPaidErr) revert NotFullyPaid();
+        if (r == Redeemability.AlreadyRedeemedErr) revert AlreadyRedeemed();
+    }
+
+    function _markAndDistribute(uint256 escrowId) private returns (IERC20 token, uint256 net) {
+        EscrowData storage e = _escrows[escrowId];
+        e.isRedeemed = true;
+        token = IERC20(_paymentTokenOfRaw(escrowId));
+        net = _distributeFees(escrowId, e.paidAmount, token);
+    }
+
+    function _accumulate(
+        address[] memory tokens,
+        uint256[] memory nets,
+        uint256 uniq,
+        address token,
+        uint256 net
+    ) private pure returns (uint256) {
+        for (uint256 j = 0; j < uniq; j++) {
+            if (tokens[j] == token) {
+                nets[j] += net;
+                return uniq;
+            }
+        }
+        tokens[uniq] = token;
+        nets[uniq] = net;
+        return uniq + 1;
+    }
+
+    function _distributeFees(uint256 escrowId, uint256 paidAmount, IERC20 token) private returns (uint256 net) {
         net = paidAmount;
         for (uint8 k = 0; k < FeeLib.MAX_FEE_KIND; k++) {
             if (k == uint8(FeeLib.FeeKind.Underwriter)) continue;
@@ -357,7 +419,7 @@ contract Escrow is IEscrow, EscrowCondition, TestnetCoreBase {
             if (feeAmount == 0) continue;
             if (feeAmount > net) feeAmount = net;
             net -= feeAmount;
-            paymentToken.safeTransfer(f.recipient, feeAmount);
+            token.safeTransfer(f.recipient, feeAmount);
             emit FeeDistributed(escrowId, k, feeAmount, f.recipient);
         }
         Fee[] storage uwFees = _underwriterFees[escrowId];
@@ -371,5 +433,15 @@ contract Escrow is IEscrow, EscrowCondition, TestnetCoreBase {
             paymentToken.safeTransfer(f.recipient, feeAmount);
             emit FeeDistributed(escrowId, uint8(FeeLib.FeeKind.Underwriter), feeAmount, f.recipient);
         }
+    }
+
+    function _resolvePaymentToken(uint256 escrowId, address token) private returns (IERC20 resolved) {
+        if (token == address(0)) {
+            resolved = paymentToken;
+        } else {
+            _requireAllowedToken(token);
+            resolved = IERC20(token);
+        }
+        _setPaymentTokenOf(escrowId, address(resolved));
     }
 }

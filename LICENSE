@@ -1,6 +1,6 @@
 This repository contains multiple components under different licenses.
 
-## Core Protocol (packages/escrow, packages/recourse, packages/orchestration)
+## Core Protocol (packages/escrow, packages/recourse)
 
 Functional Source License 1.1, ALv2 Future License (FSL-1.1-ALv2) — see licenses/FSL-1.1-ALv2.md
 Permitted for any use except a Competing Use; each version converts to the
