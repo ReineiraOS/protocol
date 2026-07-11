@@ -1,5 +1,14 @@
 # ReineiraOS
 
+> [!WARNING]
+> **Experimental.** This repository is an experimental R&D sandbox, not production
+> software. Contracts, interfaces, and deployed addresses may change or break at any time.
+>
+> **Current focus: recourse.** Active work is scoped to the recourse layer only. The full
+> settlement (escrow) flow is out of scope here for now and will be delivered later on demand.
+> The focused, independent recourse build lives in
+> [`ReineiraOS/recourse`](https://github.com/ReineiraOS/recourse).
+
 Testnet settlement and recourse infrastructure used by Reineira's execution-accountability
 stack. The current demonstration rail is operator-funded stablecoin self-bonding on Arbitrum;
 carrier and insurance interfaces are mock R&D only. Powered in part by Fhenix CoFHE.
@@ -9,8 +18,8 @@ carrier and insurance interfaces are mock R&D only. Powered in part by Fhenix Co
 | Package                  | Description                                                          |
 | ------------------------ | -------------------------------------------------------------------- |
 | `@reineira-os/shared`    | Shared Solidity contracts, interfaces, and base configs              |
-| `@reineira-os/escrow`    | Confidential escrow protocol (FHE-encrypted)                         |
-| `@reineira-os/recourse`  | Partial recourse protocol; underwriter policies are mock-only        |
+| `@reineira-os/escrow`    | Confidential escrow protocol (FHE-encrypted) — settlement flow, delivered on demand |
+| `@reineira-os/recourse`  | Recourse protocol — **current focus**; underwriter policies are mock-only |
 | `@reineira-os/operators` | Off-chain operator infrastructure (NestJS monorepo)                  |
 | `@reineira-os/sdk`       | TypeScript SDK — the installable client for building on the protocol |
 
